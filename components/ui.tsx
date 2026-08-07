@@ -1405,7 +1405,7 @@ export function SideTicket({
   const itemised = flexCents > 0 || (deal?.saveCents ?? 0) > 0;
 
   return (
-    <aside className="sticky top-[76px]">
+    <aside className="lg:sticky lg:top-[76px]">
       <div className="relative">
         <div className="overflow-hidden rounded-3xl border border-pale bg-white shadow-ticket">
           {/* The head: one photograph, a wash of navy so the white fields
@@ -2674,7 +2674,10 @@ export function BookingFlow({
         {/* With the hero capsule gone, the ticket head is the only door to
             the day and the party, so below lg it can no longer hide: it leads
             the stack instead, and from lg it returns to the right rail. */}
-        <div className="order-first lg:order-1">
+        {/* The column stretches to the row's height on purpose: a sticky child
+            can only travel inside its own container, and with items-start this
+            one would be exactly as tall as the ticket, so nothing would stick. */}
+        <div className="order-first lg:order-1 lg:self-stretch">
           <SideTicket
             cities={{ out: "Victoria", home: "Vancouver" }}
             pax={pax}

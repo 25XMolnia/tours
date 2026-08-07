@@ -1230,12 +1230,14 @@ function CapsuleStepper({
 /* ===================== SideTicket.tsx ===================== */
 
 /**
- * The light ticket that rides the right rail on desktop, filling in as the
- * day is built. Same arithmetic as the bottom dock, different clothes: white
- * with cobalt labels, yellow saved for the one button. On phones this ticket
- * hides and the bottom dock does the job.
+ * The desktop ticket, boarding-pass anatomy: a strip of the tour photo on
+ * top, the date and party on it in white, then the day as a three-stop
+ * mini-itinerary (dashes until the plan lands), a perforation, and the money
+ * in the stub. The mobile dock is untouched; this is the right rail's pose only.
  */
 export function SideTicket({
+  image,
+  cities,
   date,
   pax,
   boat,
@@ -1243,9 +1245,11 @@ export function SideTicket({
   outbound,
   ret,
   breakdown,
-  flexOn,
   flexCents,
 }: {
+  image: string;
+  /** City names for the two flight stops, e.g. { out: "Victoria", home: "Vancouver" }. */
+  cities: { out: string; home: string };
   date: string | null;
   pax: Pax;
   /** The chosen boat type: a real selection from the first tap, so the row
@@ -1255,7 +1259,7 @@ export function SideTicket({
   outbound: FlightLeg | null;
   ret: FlightLeg | null;
   breakdown: PriceBreakdown | null;
-  flexOn: boolean;
+  /** 0 when the add-on is off, the flat add-on in cents when it is on. */
   flexCents: number;
 }) {
   const size = partySize(pax);
@@ -1265,42 +1269,84 @@ export function SideTicket({
 
   const fullCents = complete ? breakdown.totalAllInCents + flexCents : null;
   const deal = fullCents !== null ? applyPackageDeal(fullCents) : null;
+  const itemised = flexCents > 0 || (deal?.saveCents ?? 0) > 0;
 
   return (
-    <aside className="sticky top-[76px] rounded-3xl border border-pale bg-white p-5 shadow-ticket">
-      <p className="text-[11px] font-black text-cobalt">Your day</p>
-      <p className={`mt-0.5 font-display text-lg font-extrabold ${date ? "" : "text-navy/35"}`}>
-        {date
-          ? new Date(`${date}T12:00:00`).toLocaleDateString("en-CA", {
-              weekday: "long",
-              month: "short",
-              day: "numeric",
-            })
-          : "Pick a day"}
-      </p>
-
-      <div className="mt-2 grid gap-0.5 text-[13px] font-bold">
-        <Row label="Travellers" value={`${size} ${size === 1 ? "traveller" : "travellers"}${pax.infants > 0 ? ` plus ${pax.infants} on laps` : ""}`} />
-        <Row label="Boat" value={BOAT_SHORT[boat]} />
-        <Row label="Out" value={outbound ? fmt12(outbound.dep) : null} fallback="Pick a plan" />
-        <Row label="Home" value={ret ? fmt12(ret.dep) : null} fallback="Pick a plan" />
-        <Row label="Flex" value={flexOn ? `On, ${fmtMoney(flexCents)}` : null} fallback="Off" />
+    <aside className="sticky top-[76px] overflow-hidden rounded-3xl border border-pale bg-white shadow-ticket">
+      {/* The cover carries the header: the photo says which tour, and the day
+          and the party sit on it in white. No eyebrow: a ticket does not need
+          to announce that it is a ticket. */}
+      <div
+        className="relative h-[104px] bg-cover bg-center"
+        style={{
+          backgroundImage: `linear-gradient(180deg,rgba(0,45,98,.08) 25%,rgba(0,45,98,.74)), url(${image}), linear-gradient(170deg,#8FCBFF,#0E5FA8)`,
+        }}
+      >
+        <div className="absolute inset-x-0 bottom-0 px-5 pb-3.5">
+          <p
+            className={`font-display text-[17px] font-extrabold leading-tight text-white ${
+              date ? "" : "opacity-70"
+            }`}
+          >
+            {date
+              ? new Date(`${date}T12:00:00`).toLocaleDateString("en-CA", {
+                  weekday: "long",
+                  month: "short",
+                  day: "numeric",
+                })
+              : "Pick a day"}
+          </p>
+          <p className="mt-0.5 text-[12px] font-semibold text-white/85">
+            {size} {size === 1 ? "traveller" : "travellers"}
+            {pax.infants > 0 ? `, ${pax.infants} on laps` : ""}, {BOAT_SHORT[boat].toLowerCase()}
+          </p>
+        </div>
       </div>
 
-      <div className="mt-3 border-t-2 border-dashed border-pale pt-3">
+      <div className="p-5 pb-4">
+        {/* The day as a mini-itinerary, quiet type, dashes until it lands. */}
+        <div className="grid grid-cols-[64px_1fr] gap-x-2.5 gap-y-1.5 text-[12.5px]">
+          <ItinRow time={outbound ? fmt12(outbound.dep) : null} label={`Fly to ${cities.out}`} />
+          <ItinRow
+            time={tour ? fmt12(tour.start) : null}
+            label="Whale watching"
+            sub={tour ? `to ${fmt12(tour.end)}` : undefined}
+          />
+          <ItinRow time={ret ? fmt12(ret.dep) : null} label={`Fly to ${cities.home}`} />
+        </div>
+      </div>
+
+      {/* Perforation: the money lives in the stub. */}
+      <div className="relative border-t-2 border-dashed border-pale" aria-hidden="true">
+        <span className="absolute -left-2.5 -top-2.5 h-5 w-5 rounded-full bg-mist" />
+        <span className="absolute -right-2.5 -top-2.5 h-5 w-5 rounded-full bg-mist" />
+      </div>
+
+      <div className="p-5 pt-3.5">
         {deal !== null && fullCents !== null ? (
           <>
-            {deal.saveCents > 0 && (
-              <div className="flex items-baseline justify-between">
-                <span className="rounded-full bg-pale px-2.5 py-1 text-[10.5px] font-black text-cobalt">
-                  Package deal, {pct}% off
-                </span>
-                <span className="text-[13px] font-bold text-navy/45 line-through decoration-2">
-                  {fmtMoney(fullCents)}
-                </span>
+            {/* The money reads as arithmetic: the day, then anything added or
+                taken off, then what you pay. With nothing to adjust the lines
+                would just restate the total, so they only appear when they
+                have something to say. */}
+            {itemised && (
+              <div className="grid gap-0.5 text-[12px] font-bold">
+                <MoneyLine label="The day" value={ledger(fullCents - flexCents)} />
+                {flexCents > 0 && <MoneyLine label="Flexible" value={ledger(flexCents)} />}
+                {deal.saveCents > 0 && (
+                  <MoneyLine
+                    label={`Package deal, ${pct}% off`}
+                    value={`-${ledger(deal.saveCents)}`}
+                    accent
+                  />
+                )}
               </div>
             )}
-            <p className="mt-1.5 font-display text-[27px] font-black tabular-nums leading-none">
+            <p
+              className={`font-display text-[27px] font-black tabular-nums leading-none ${
+                itemised ? "mt-2 border-t-2 border-dashed border-pale pt-2.5" : "mt-0.5"
+              }`}
+            >
               {fmtMoney(deal.totalCents)}
             </p>
             <p className="mt-1 text-[11px] font-bold text-navy/50">for everyone, all in</p>
@@ -1312,15 +1358,15 @@ export function SideTicket({
                 Book this day
               </a>
             )}
+            {pax.infants > 0 && (
+              <p className="mt-2 text-[11px] font-semibold text-navy/50">
+                Infants fly free on a lap. The boat&#x27;s infant fare is in the total.
+              </p>
+            )}
           </>
         ) : (
           <p className="text-[12.5px] font-bold leading-relaxed text-navy/50">
             Pick a day and a plan and the price lands here, package deal included.
-          </p>
-        )}
-        {pax.infants > 0 && complete && (
-          <p className="mt-2 text-[11px] font-semibold text-navy/50">
-            Infants fly free on a lap. The boat's infant fare is in the total.
           </p>
         )}
       </div>
@@ -1328,12 +1374,38 @@ export function SideTicket({
   );
 }
 
-function Row({ label, value, fallback }: { label: string; value: string | null; fallback?: string }) {
+/**
+ * The shared money formatter drops empty cents ($99), which is right on a
+ * button but ragged in a column of figures. In the ledger every line keeps
+ * two decimals so the amounts line up under each other.
+ */
+function ledger(cents: number) {
+  return `$${(cents / 100).toLocaleString("en-CA", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
+
+function MoneyLine({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
-    <div className="flex items-baseline justify-between gap-3 py-0.5">
-      <span className="text-navy/55">{label}</span>
-      <span className={value ? "text-right" : "text-right text-navy/35"}>{value ?? fallback}</span>
+    <div className={`flex justify-between gap-3 ${accent ? "text-cobalt" : "text-navy/60"}`}>
+      <span>{label}</span>
+      <span className="tabular-nums">{value}</span>
     </div>
+  );
+}
+
+function ItinRow({ time, label, sub }: { time: string | null; label: string; sub?: string }) {
+  return (
+    <>
+      <span className={`whitespace-nowrap font-bold tabular-nums ${time ? "text-navy" : "text-navy/30"}`}>
+        {time ?? "--:--"}
+      </span>
+      <span className={`font-semibold ${time ? "text-navy/80" : "text-navy/45"}`}>
+        {label}
+        {sub && <span className="text-navy/50"> {sub}</span>}
+      </span>
+    </>
   );
 }
 
@@ -2293,7 +2365,6 @@ export function BookingFlow({
         </span>
         <div>
           <div className="text-white sm:max-w-[58%] sm:pb-1">
-            <p className="text-[12.5px] font-extrabold text-sky">{visuals.route}</p>
             <h1 className="mt-1.5 max-w-xl text-3xl text-white sm:text-4xl">{visuals.title}</h1>
             <div className="mt-3 flex flex-wrap gap-1.5">
               {visuals.facts.map((f) => (
@@ -2470,6 +2541,8 @@ export function BookingFlow({
 
         <div className="hidden lg:block">
           <SideTicket
+            image={visuals.image}
+            cities={{ out: "Victoria", home: "Vancouver" }}
             date={date}
             pax={pax}
             boat={boat}
@@ -2477,7 +2550,6 @@ export function BookingFlow({
             outbound={outbound}
             ret={ret}
             breakdown={breakdown}
-            flexOn={flexOn}
             flexCents={flexCents}
           />
         </div>

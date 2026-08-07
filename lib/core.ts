@@ -2912,7 +2912,7 @@ export const TOURS: Tour[] = [
       ["4:30 pm", "Fly to Vancouver.", "Return to the Harbour Air terminal to check in for your flight to Vancouver."],
     ]),
     hoursNote:
-      "A sample day. Your own times come from the flights and sailing you pick below.",
+      "A sample day. Your own times come from the flights and sailing you pick above.",
     booking: { kind: "whale-day" },
   },
   {

@@ -154,7 +154,6 @@ export default function TourPage({
 
           <div className="flex flex-wrap items-end gap-4">
             <div className="min-w-[240px] flex-1 text-white">
-              <p className="text-[12.5px] font-extrabold text-sky">{tour.route}</p>
               <h1 className="mt-1.5 max-w-xl text-3xl text-white sm:text-4xl">{tour.title}</h1>
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {tour.facts.map((f) => (

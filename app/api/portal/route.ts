@@ -5,7 +5,7 @@ import type { BoatType, FlightLeg, LegNeed, Pax } from "@/lib/core";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
- 
+
 const HANDLERS: Record<string, (req: NextRequest) => Promise<Response>> = {
   "availability": (req) => GET_availability(req),
   "calendar": (req) => GET_calendar(req),

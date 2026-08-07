@@ -1083,9 +1083,9 @@ export function DayCapsule({
 }: {
   /** Which capsule edge the popover hangs from; "right" for the hero corner. */
   align?: "left" | "right";
-  /** "pill" is the white capsule in the hero; "cover" prints the same two
-   *  fields straight onto a photo, boarding-pass style, with no chrome. */
-  variant?: "pill" | "cover";
+  /** "pill" is the white capsule in the hero; "fields" prints the same two
+   *  answers as bare boarding-pass fields, no capsule and no chrome. */
+  variant?: "pill" | "fields";
   date: string | null;
   onDate: (d: string) => void;
   ym: { y: number; m: number };
@@ -1137,33 +1137,33 @@ export function DayCapsule({
   return (
     <div
       ref={rootRef}
-      className={variant === "cover" ? "relative block" : "relative block sm:inline-block"}
+      className={variant === "fields" ? "relative block" : "relative block sm:inline-block"}
     >
-      {variant === "cover" ? (
-        /* On the photo the two fields are the whole control: sky caps for the
-           label, white for the answer, nothing else. The tap target is the
-           full width of the cover, so there is no button to hunt for. */
+      {variant === "fields" ? (
+        /* The two fields are the whole control: a cobalt cap for the label,
+           the answer under it, nothing else. The tap target runs the full
+           width of the ticket head, so there is no button to hunt for. */
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
           aria-expanded={open}
-          className="flex w-full items-end gap-5 px-5 pb-3.5 pt-8 text-left"
+          className="flex w-full items-end gap-6 rounded-t-3xl px-5 pb-3.5 pt-4 text-left transition-colors hover:bg-mist/70"
         >
           <span>
-            <span className="block text-[9.5px] font-black tracking-[0.08em] text-sky">DAY</span>
+            <span className="block text-[9.5px] font-black tracking-[0.08em] text-cobalt">DAY</span>
             <span
-              className={`block font-display text-[15px] font-extrabold leading-tight text-white ${
-                dateLabel ? "" : "opacity-75"
+              className={`block font-display text-[15px] font-extrabold leading-tight ${
+                dateLabel ? "" : "text-navy/40"
               }`}
             >
               {dateLabel ?? "Pick a day"}
             </span>
           </span>
           <span>
-            <span className="block text-[9.5px] font-black tracking-[0.08em] text-sky">
+            <span className="block text-[9.5px] font-black tracking-[0.08em] text-cobalt">
               TRAVELLERS
             </span>
-            <span className="block font-display text-[15px] font-extrabold leading-tight text-white">
+            <span className="block font-display text-[15px] font-extrabold leading-tight">
               {whoLabel}
             </span>
           </span>
@@ -1268,28 +1268,54 @@ function CapsuleStepper({
 /* ===================== SideTicket.tsx ===================== */
 
 /**
- * The two frames the ticket cover cycles through. A slow crossfade, never a
+ * The frames the hero cycles through, in order. A slow crossfade, never a
  * slideshow with chrome: the photo is scenery, not a gallery to operate.
  */
-const TICKET_SHOTS = [
+export const COVER_SHOTS = [
   "https://i.redd.it/sunset-whale-watching-v0-h1y8a1zlp6if1.jpg?width=3050&format=pjpg&auto=webp&s=cf3135cd1cfc81e0655625c353849483ecfb0de9",
   "https://t3.ftcdn.net/jpg/10/35/88/50/360_F_1035885083_P5DoiniSyFhg9aGvbgxN2xFJbTWdVHFs.jpg",
 ];
 
 /**
- * The desktop ticket, boarding-pass anatomy: a photo cover with the day and
- * the party printed on it as two fields, the day as a three-stop
- * mini-itinerary underneath (dashes until the plan lands), a perforation, and
- * the money in the stub. The mobile dock is untouched; this is the right
- * rail's pose only.
+ * The stack of crossfading photographs behind a cover. Absolutely positioned,
+ * so the caller owns the shape and the clipping; only one frame is lit at a
+ * time and the change takes a second and a half, which is slow enough to read
+ * as weather rather than as a transition.
+ */
+export function CoverSlides({
+  images,
+  frame,
+  className = "",
+}: {
+  images: string[];
+  frame: number;
+  className?: string;
+}) {
+  return (
+    <div className={`absolute inset-0 ${className}`} aria-hidden="true">
+      {images.map((src, i) => (
+        <div
+          key={src}
+          className="absolute inset-0 bg-cover bg-center transition-opacity duration-[1400ms] ease-in-out"
+          style={{ backgroundImage: `url(${src})`, opacity: i === frame ? 1 : 0 }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * The desktop ticket: a paper boarding pass with no photograph. The day and
+ * the party are printed at the head as two fields and open the picker on tap,
+ * the day runs underneath as a three-stop mini-itinerary (dashes until the
+ * plan lands), then a perforation, then the money in the stub. The hero
+ * carries the scenery; the ticket carries the facts. The mobile dock is
+ * untouched; this is the right rail's pose only.
  *
- * Three quiet motions, all of which stop dead under prefers-reduced-motion:
- * the cover crossfades between its frames, the photo drifts against the
- * scroll so the parked ticket still breathes, and a changed total rolls up
- * behind a single sweep of light.
+ * Its one motion: a changed total rolls up behind a single sweep of light,
+ * and that stops dead under prefers-reduced-motion.
  */
 export function SideTicket({
-  images = TICKET_SHOTS,
   cities,
   pax,
   tour,
@@ -1299,8 +1325,6 @@ export function SideTicket({
   flexCents,
   plan,
 }: {
-  /** Cover frames, in order. One is fine; two or more crossfade. */
-  images?: string[];
   /** City names for the two flight stops, e.g. { out: "Victoria", home: "Vancouver" }. */
   cities: { out: string; home: string };
   pax: Pax;
@@ -1310,7 +1334,7 @@ export function SideTicket({
   breakdown: PriceBreakdown | null;
   /** 0 when the add-on is off, the flat add-on in cents when it is on. */
   flexCents: number;
-  /** The day and party control, printed on the cover. */
+  /** The day and party control, printed at the head of the ticket. */
   plan: React.ReactNode;
 }) {
   const complete = breakdown !== null && tour !== null && outbound !== null && ret !== null;
@@ -1322,34 +1346,16 @@ export function SideTicket({
   const itemised = flexCents > 0 || (deal?.saveCents ?? 0) > 0;
 
   const calm = usePrefersReducedMotion();
-  const shot = useCoverFrame(images.length, calm);
-  const photoRef = useScrollDrift(calm);
   const [rolled, sheen] = useRollingTotal(deal?.totalCents ?? null, calm);
 
   return (
     <aside className="sticky top-[76px]">
-      <div className="relative">
-        <div className="overflow-hidden rounded-3xl border border-pale bg-white shadow-ticket">
-          {/* The cover: scenery behind, a wash of navy so white type always
-              holds, and the plan fields sitting on it like print on a pass. */}
-          <div className="relative h-[118px] overflow-hidden">
-            <div ref={photoRef} className="absolute -inset-y-6 inset-x-0 will-change-transform">
-              {images.map((src, i) => (
-                <div
-                  key={src}
-                  className="absolute inset-0 bg-cover bg-center transition-opacity duration-[1400ms] ease-in-out"
-                  style={{ backgroundImage: `url(${src})`, opacity: i === shot ? 1 : 0 }}
-                />
-              ))}
-            </div>
-            <div
-              className="absolute inset-0"
-              style={{
-                background: "linear-gradient(180deg,rgba(0,45,98,.06) 28%,rgba(0,45,98,.7))",
-              }}
-            />
-          </div>
+      <div className="relative rounded-3xl border border-pale bg-white shadow-ticket">
+        {/* The head sits outside the clipped body so its calendar can hang
+            past the edge; the notches below need that clip, the popover does not. */}
+        <div className="relative z-20 border-b border-pale">{plan}</div>
 
+        <div className="relative overflow-hidden rounded-b-3xl">
           <div className="p-5 pb-4">
             {/* The day as a mini-itinerary, quiet type, dashes until it lands. */}
             <div className="grid grid-cols-[64px_1fr] gap-x-2.5 gap-y-1.5 text-[12.5px]">
@@ -1428,12 +1434,6 @@ export function SideTicket({
             />
           )}
         </div>
-
-        {/* The plan control rides above the clipped ticket so its calendar can
-            hang past the edge; the notches need that clip, the popover does not. */}
-        <div className="absolute inset-x-0 top-0 z-20 h-[118px]">
-          <div className="absolute inset-x-0 bottom-0">{plan}</div>
-        </div>
       </div>
     </aside>
   );
@@ -1461,36 +1461,6 @@ function useCoverFrame(count: number, calm: boolean) {
     return () => window.clearInterval(id);
   }, [calm, count]);
   return i;
-}
-
-/** The photo drifts a few pixels against the page, so the parked ticket reads
- *  as a window rather than a screenshot. */
-function useScrollDrift(calm: boolean) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    if (calm) {
-      el.style.transform = "";
-      return;
-    }
-    let frame = 0;
-    const paint = () => {
-      frame = 0;
-      const y = Math.max(-18, Math.min(18, (window.scrollY - 320) * 0.04));
-      el.style.transform = `translate3d(0,${y}px,0)`;
-    };
-    const onScroll = () => {
-      if (!frame) frame = window.requestAnimationFrame(paint);
-    };
-    paint();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      if (frame) window.cancelAnimationFrame(frame);
-    };
-  }, [calm]);
-  return ref;
 }
 
 /**
@@ -2385,6 +2355,10 @@ export function BookingFlow({
   const [custom, setCustom] = useState(false);
 
   const [flexOn, setFlexOn] = useState(false);
+  /* One clock for every cover on the page: the hero and the ticket stub turn
+     to the same frame, so the two photographs never argue with each other. */
+  const calmCovers = usePrefersReducedMotion();
+  const frame = useCoverFrame(COVER_SHOTS.length, calmCovers);
   const [tourPk, setTourPk] = useState<string | null>(null);
   const [outboundId, setOutboundId] = useState<string | null>(null);
   const [returnId, setReturnId] = useState<string | null>(null);
@@ -2515,14 +2489,22 @@ export function BookingFlow({
           a stack and the capsule goes full width inside the photo. */}
       <div
         className="relative flex min-h-[380px] flex-col justify-between rounded-3xl bg-cover bg-center p-4 shadow-ticket sm:mb-4 sm:p-5"
-        style={{
-          backgroundImage: `linear-gradient(180deg,rgba(0,45,98,0) 30%,rgba(0,45,98,.62)), url(${visuals.image}), linear-gradient(170deg,#8FCBFF,#0E5FA8)`,
-        }}
+        style={{ backgroundImage: "linear-gradient(170deg,#8FCBFF,#0E5FA8)" }}
       >
-        <span className="self-start rounded-full bg-white/95 px-4 py-2 text-[12.5px] font-black text-navy">
+        {/* The photographs and their wash live in their own clipped layer, so
+            the capsule can still hang past the bottom edge. */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl">
+          <CoverSlides images={COVER_SHOTS} frame={frame} />
+          <div
+            className="absolute inset-0"
+            style={{ background: "linear-gradient(180deg,rgba(0,45,98,0) 30%,rgba(0,45,98,.62))" }}
+          />
+        </div>
+
+        <span className="relative self-start rounded-full bg-white/95 px-4 py-2 text-[12.5px] font-black text-navy">
           {visuals.durationChip}
         </span>
-        <div>
+        <div className="relative">
           <div className="text-white sm:max-w-[58%] sm:pb-1">
             <h1 className="mt-1.5 max-w-xl text-3xl text-white sm:text-4xl">
               {titleLines(visuals.title).map((line) => (
@@ -2618,13 +2600,7 @@ export function BookingFlow({
             ) : combosLoading ? (
               <Hint text="Checking the boats and the flight board" pulse />
             ) : boatTours.length === 0 ? (
-              <Hint
-                text={
-                  publicFeed
-                    ? "That boat's departure does not fit your flights. Try the other boat or another date, or ask us: the crew often runs more sailings than the site shows."
-                    : "No sailings pair with flights that can carry your group that day. A seaplane sells out by weight as well as seats, so a different date, or the other boat, often does it."
-                }
-              />
+              <Hint text="No sailings pair with flights that can carry your group that day. A seaplane sells out by weight as well as seats, so a different date, or the other boat, often does it." />
             ) : custom ? (
               <div className="rounded-3xl border border-pale bg-white p-6 shadow-ticket sm:p-7">
                 <Timeline
@@ -2715,7 +2691,7 @@ export function BookingFlow({
             flexCents={flexCents}
             plan={
               <DayCapsule
-                variant="cover"
+                variant="fields"
                 align="right"
                 date={date}
                 onDate={(d) => setDate(d)}

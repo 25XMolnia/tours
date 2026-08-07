@@ -2885,6 +2885,18 @@ export type Tour = {
   booking: BookingSpec;
 };
 
+/**
+ * A headline reads better broken where it is already punctuated: each
+ * sentence takes its own line, so "Whales for lunch. Home for dinner." lands
+ * as two lines instead of wrapping wherever the column happens to end.
+ * Titles that are a single sentence come back untouched.
+ */
+export function titleLines(title: string): string[] {
+  const parts = title.match(/[^.!?]+[.!?]+/g);
+  if (!parts || parts.length < 2) return [title];
+  return parts.map((s) => s.trim());
+}
+
 const hours = (rows: [string, string, string][]): TourHour[] =>
   rows.map(([time, title, body]) => ({ time, title, body }));
 

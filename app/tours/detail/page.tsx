@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { SiteNav, FromPrice, BookingFlow, FlightsFlow } from "@/components/ui";
-import { findTour, TOURS, packageDiscountPct, todayVancouver } from "@/lib/core";
+import { findTour, titleLines, TOURS, packageDiscountPct, todayVancouver } from "@/lib/core";
 
 type Search = Record<string, string | string[] | undefined>;
 
@@ -154,7 +154,13 @@ export default function TourPage({
 
           <div className="flex flex-wrap items-end gap-4">
             <div className="min-w-[240px] flex-1 text-white">
-              <h1 className="mt-1.5 max-w-xl text-3xl text-white sm:text-4xl">{tour.title}</h1>
+              <h1 className="mt-1.5 max-w-xl text-3xl text-white sm:text-4xl">
+                {titleLines(tour.title).map((line) => (
+                  <span key={line} className="block">
+                    {line}
+                  </span>
+                ))}
+              </h1>
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {tour.facts.map((f) => (
                   <span

@@ -1,6 +1,6 @@
 "use client";
 // components/ui.tsx — все компоненты портала, объединены из 14 файлов
-import { BOAT_SHORT, applyPackageDeal, boatAllInCents, eligibleBoats, flexAddonCents, flightPriceCents, fmt12, fmtMoney, fmtWait, minutesBetween, packageDiscountPct, partySize, priceBreakdown, seatsOpenFor, todayVancouver } from "@/lib/core";
+import { BOAT_SHORT, titleLines, applyPackageDeal, boatAllInCents, eligibleBoats, flexAddonCents, flightPriceCents, fmt12, fmtMoney, fmtWait, minutesBetween, packageDiscountPct, partySize, priceBreakdown, seatsOpenFor, todayVancouver } from "@/lib/core";
 import type { BoatType, DataSources, DayCombos, DayOffer, FlightLeg, FlightVariant, Pax, PriceBreakdown, TourSlot, TourWithFlights } from "@/lib/core";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -1060,6 +1060,7 @@ export function ErrorNote({ text }: { text: string }) {
  */
 export function DayCapsule({
   align = "left",
+  variant = "pill",
   date,
   onDate,
   ym,
@@ -1082,6 +1083,9 @@ export function DayCapsule({
 }: {
   /** Which capsule edge the popover hangs from; "right" for the hero corner. */
   align?: "left" | "right";
+  /** "pill" is the white capsule in the hero; "cover" prints the same two
+   *  fields straight onto a photo, boarding-pass style, with no chrome. */
+  variant?: "pill" | "cover";
   date: string | null;
   onDate: (d: string) => void;
   ym: { y: number; m: number };
@@ -1131,7 +1135,40 @@ export function DayCapsule({
     : null;
 
   return (
-    <div ref={rootRef} className="relative block sm:inline-block">
+    <div
+      ref={rootRef}
+      className={variant === "cover" ? "relative block" : "relative block sm:inline-block"}
+    >
+      {variant === "cover" ? (
+        /* On the photo the two fields are the whole control: sky caps for the
+           label, white for the answer, nothing else. The tap target is the
+           full width of the cover, so there is no button to hunt for. */
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          className="flex w-full items-end gap-5 px-5 pb-3.5 pt-8 text-left"
+        >
+          <span>
+            <span className="block text-[9.5px] font-black tracking-[0.08em] text-sky">DAY</span>
+            <span
+              className={`block font-display text-[15px] font-extrabold leading-tight text-white ${
+                dateLabel ? "" : "opacity-75"
+              }`}
+            >
+              {dateLabel ?? "Pick a day"}
+            </span>
+          </span>
+          <span>
+            <span className="block text-[9.5px] font-black tracking-[0.08em] text-sky">
+              TRAVELLERS
+            </span>
+            <span className="block font-display text-[15px] font-extrabold leading-tight text-white">
+              {whoLabel}
+            </span>
+          </span>
+        </button>
+      ) : (
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -1156,6 +1193,7 @@ export function DayCapsule({
           <IconChevronRight className="h-4 w-4" />
         </span>
       </button>
+      )}
 
       {open && (
         <div
@@ -1230,39 +1268,51 @@ function CapsuleStepper({
 /* ===================== SideTicket.tsx ===================== */
 
 /**
- * The desktop ticket, boarding-pass anatomy: a strip of the tour photo on
- * top, the date and party on it in white, then the day as a three-stop
- * mini-itinerary (dashes until the plan lands), a perforation, and the money
- * in the stub. The mobile dock is untouched; this is the right rail's pose only.
+ * The two frames the ticket cover cycles through. A slow crossfade, never a
+ * slideshow with chrome: the photo is scenery, not a gallery to operate.
+ */
+const TICKET_SHOTS = [
+  "https://i.redd.it/sunset-whale-watching-v0-h1y8a1zlp6if1.jpg?width=3050&format=pjpg&auto=webp&s=cf3135cd1cfc81e0655625c353849483ecfb0de9",
+  "https://t3.ftcdn.net/jpg/10/35/88/50/360_F_1035885083_P5DoiniSyFhg9aGvbgxN2xFJbTWdVHFs.jpg",
+];
+
+/**
+ * The desktop ticket, boarding-pass anatomy: a photo cover with the day and
+ * the party printed on it as two fields, the day as a three-stop
+ * mini-itinerary underneath (dashes until the plan lands), a perforation, and
+ * the money in the stub. The mobile dock is untouched; this is the right
+ * rail's pose only.
+ *
+ * Three quiet motions, all of which stop dead under prefers-reduced-motion:
+ * the cover crossfades between its frames, the photo drifts against the
+ * scroll so the parked ticket still breathes, and a changed total rolls up
+ * behind a single sweep of light.
  */
 export function SideTicket({
-  image,
+  images = TICKET_SHOTS,
   cities,
-  date,
   pax,
-  boat,
   tour,
   outbound,
   ret,
   breakdown,
   flexCents,
+  plan,
 }: {
-  image: string;
+  /** Cover frames, in order. One is fine; two or more crossfade. */
+  images?: string[];
   /** City names for the two flight stops, e.g. { out: "Victoria", home: "Vancouver" }. */
   cities: { out: string; home: string };
-  date: string | null;
   pax: Pax;
-  /** The chosen boat type: a real selection from the first tap, so the row
-   *  never claims "not picked" while a card sits visibly selected. */
-  boat: BoatType;
   tour: TourSlot | null;
   outbound: FlightLeg | null;
   ret: FlightLeg | null;
   breakdown: PriceBreakdown | null;
   /** 0 when the add-on is off, the flat add-on in cents when it is on. */
   flexCents: number;
+  /** The day and party control, printed on the cover. */
+  plan: React.ReactNode;
 }) {
-  const size = partySize(pax);
   const complete = breakdown !== null && tour !== null && outbound !== null && ret !== null;
   const pct = packageDiscountPct();
   const bookHref = process.env.NEXT_PUBLIC_BOOK_URL;
@@ -1271,107 +1321,216 @@ export function SideTicket({
   const deal = fullCents !== null ? applyPackageDeal(fullCents) : null;
   const itemised = flexCents > 0 || (deal?.saveCents ?? 0) > 0;
 
+  const calm = usePrefersReducedMotion();
+  const shot = useCoverFrame(images.length, calm);
+  const photoRef = useScrollDrift(calm);
+  const [rolled, sheen] = useRollingTotal(deal?.totalCents ?? null, calm);
+
   return (
-    <aside className="sticky top-[76px] overflow-hidden rounded-3xl border border-pale bg-white shadow-ticket">
-      {/* The cover carries the header: the photo says which tour, and the day
-          and the party sit on it in white. No eyebrow: a ticket does not need
-          to announce that it is a ticket. */}
-      <div
-        className="relative h-[104px] bg-cover bg-center"
-        style={{
-          backgroundImage: `linear-gradient(180deg,rgba(0,45,98,.08) 25%,rgba(0,45,98,.74)), url(${image}), linear-gradient(170deg,#8FCBFF,#0E5FA8)`,
-        }}
-      >
-        <div className="absolute inset-x-0 bottom-0 px-5 pb-3.5">
-          <p
-            className={`font-display text-[17px] font-extrabold leading-tight text-white ${
-              date ? "" : "opacity-70"
-            }`}
-          >
-            {date
-              ? new Date(`${date}T12:00:00`).toLocaleDateString("en-CA", {
-                  weekday: "long",
-                  month: "short",
-                  day: "numeric",
-                })
-              : "Pick a day"}
-          </p>
-          <p className="mt-0.5 text-[12px] font-semibold text-white/85">
-            {size} {size === 1 ? "traveller" : "travellers"}
-            {pax.infants > 0 ? `, ${pax.infants} on laps` : ""}, {BOAT_SHORT[boat].toLowerCase()}
-          </p>
-        </div>
-      </div>
+    <aside className="sticky top-[76px]">
+      <div className="relative">
+        <div className="overflow-hidden rounded-3xl border border-pale bg-white shadow-ticket">
+          {/* The cover: scenery behind, a wash of navy so white type always
+              holds, and the plan fields sitting on it like print on a pass. */}
+          <div className="relative h-[118px] overflow-hidden">
+            <div ref={photoRef} className="absolute -inset-y-6 inset-x-0 will-change-transform">
+              {images.map((src, i) => (
+                <div
+                  key={src}
+                  className="absolute inset-0 bg-cover bg-center transition-opacity duration-[1400ms] ease-in-out"
+                  style={{ backgroundImage: `url(${src})`, opacity: i === shot ? 1 : 0 }}
+                />
+              ))}
+            </div>
+            <div
+              className="absolute inset-0"
+              style={{
+                background: "linear-gradient(180deg,rgba(0,45,98,.06) 28%,rgba(0,45,98,.7))",
+              }}
+            />
+          </div>
 
-      <div className="p-5 pb-4">
-        {/* The day as a mini-itinerary, quiet type, dashes until it lands. */}
-        <div className="grid grid-cols-[64px_1fr] gap-x-2.5 gap-y-1.5 text-[12.5px]">
-          <ItinRow time={outbound ? fmt12(outbound.dep) : null} label={`Fly to ${cities.out}`} />
-          <ItinRow
-            time={tour ? fmt12(tour.start) : null}
-            label="Whale watching"
-            sub={tour ? `to ${fmt12(tour.end)}` : undefined}
-          />
-          <ItinRow time={ret ? fmt12(ret.dep) : null} label={`Fly to ${cities.home}`} />
-        </div>
-      </div>
+          <div className="p-5 pb-4">
+            {/* The day as a mini-itinerary, quiet type, dashes until it lands. */}
+            <div className="grid grid-cols-[64px_1fr] gap-x-2.5 gap-y-1.5 text-[12.5px]">
+              <ItinRow time={outbound ? fmt12(outbound.dep) : null} label={`Fly to ${cities.out}`} />
+              <ItinRow time={tour ? fmt12(tour.start) : null} label="Whale watching" />
+              <ItinRow time={ret ? fmt12(ret.dep) : null} label={`Fly to ${cities.home}`} />
+            </div>
+          </div>
 
-      {/* Perforation: the money lives in the stub. */}
-      <div className="relative border-t-2 border-dashed border-pale" aria-hidden="true">
-        <span className="absolute -left-2.5 -top-2.5 h-5 w-5 rounded-full bg-mist" />
-        <span className="absolute -right-2.5 -top-2.5 h-5 w-5 rounded-full bg-mist" />
-      </div>
+          {/* Perforation: the money lives in the stub. */}
+          <div className="relative border-t-2 border-dashed border-pale" aria-hidden="true">
+            <span className="absolute -left-2.5 -top-2.5 h-5 w-5 rounded-full bg-mist" />
+            <span className="absolute -right-2.5 -top-2.5 h-5 w-5 rounded-full bg-mist" />
+          </div>
 
-      <div className="p-5 pt-3.5">
-        {deal !== null && fullCents !== null ? (
-          <>
-            {/* The money reads as arithmetic: the day, then anything added or
-                taken off, then what you pay. With nothing to adjust the lines
-                would just restate the total, so they only appear when they
-                have something to say. */}
-            {itemised && (
-              <div className="grid gap-0.5 text-[12px] font-bold">
-                <MoneyLine label="The day" value={ledger(fullCents - flexCents)} />
-                {flexCents > 0 && <MoneyLine label="Flexible" value={ledger(flexCents)} />}
-                {deal.saveCents > 0 && (
-                  <MoneyLine
-                    label={`Package deal, ${pct}% off`}
-                    value={`-${ledger(deal.saveCents)}`}
-                    accent
-                  />
+          <div className="p-5 pt-3.5">
+            {deal !== null && fullCents !== null ? (
+              <>
+                {/* The money reads as arithmetic: the day, then anything added or
+                    taken off, then what you pay. With nothing to adjust the lines
+                    would just restate the total, so they only appear when they
+                    have something to say. */}
+                {itemised && (
+                  <div className="grid gap-0.5 text-[12px] font-bold">
+                    <MoneyLine label="The day" value={ledger(fullCents - flexCents)} />
+                    {flexCents > 0 && <MoneyLine label="Flexible" value={ledger(flexCents)} />}
+                    {deal.saveCents > 0 && (
+                      <MoneyLine
+                        label={`Package deal, ${pct}% off`}
+                        value={`-${ledger(deal.saveCents)}`}
+                        accent
+                      />
+                    )}
+                  </div>
                 )}
-              </div>
-            )}
-            <p
-              className={`font-display text-[27px] font-black tabular-nums leading-none ${
-                itemised ? "mt-2 border-t-2 border-dashed border-pale pt-2.5" : "mt-0.5"
-              }`}
-            >
-              {fmtMoney(deal.totalCents)}
-            </p>
-            <p className="mt-1 text-[11px] font-bold text-navy/50">for everyone, all in</p>
-            {bookHref && (
-              <a
-                href={bookHref}
-                className="mt-3 block rounded-2xl bg-smart py-3 text-center text-sm font-extrabold text-navy no-underline transition-[filter] hover:brightness-105"
-              >
-                Book this day
-              </a>
-            )}
-            {pax.infants > 0 && (
-              <p className="mt-2 text-[11px] font-semibold text-navy/50">
-                Infants fly free on a lap. The boat&#x27;s infant fare is in the total.
+                <p
+                  className={`font-display text-[27px] font-black tabular-nums leading-none ${
+                    itemised ? "mt-2 border-t-2 border-dashed border-pale pt-2.5" : "mt-0.5"
+                  }`}
+                >
+                  {fmtMoney(rolled ?? deal.totalCents)}
+                </p>
+                <p className="mt-1 text-[11px] font-bold text-navy/50">for everyone, all in</p>
+                {bookHref && (
+                  <a
+                    href={bookHref}
+                    className="mt-3 block rounded-2xl bg-smart py-3 text-center text-sm font-extrabold text-navy no-underline transition-[filter] hover:brightness-105"
+                  >
+                    Book this day
+                  </a>
+                )}
+                {pax.infants > 0 && (
+                  <p className="mt-2 text-[11px] font-semibold text-navy/50">
+                    Infants fly free on a lap. The boat&#x27;s infant fare is in the total.
+                  </p>
+                )}
+              </>
+            ) : (
+              <p className="text-[12.5px] font-bold leading-relaxed text-navy/50">
+                Pick a day and a plan and the price lands here, package deal included.
               </p>
             )}
-          </>
-        ) : (
-          <p className="text-[12.5px] font-bold leading-relaxed text-navy/50">
-            Pick a day and a plan and the price lands here, package deal included.
-          </p>
-        )}
+          </div>
+
+          {/* One sweep of light when the total changes, so the new figure is
+              seen rather than merely displayed. */}
+          {sheen > 0 && (
+            <span
+              key={sheen}
+              aria-hidden="true"
+              className="ticket-sheen pointer-events-none absolute inset-0"
+              style={{
+                background:
+                  "linear-gradient(105deg,transparent 38%,rgba(255,255,255,.5) 50%,transparent 62%)",
+              }}
+            />
+          )}
+        </div>
+
+        {/* The plan control rides above the clipped ticket so its calendar can
+            hang past the edge; the notches need that clip, the popover does not. */}
+        <div className="absolute inset-x-0 top-0 z-20 h-[118px]">
+          <div className="absolute inset-x-0 bottom-0">{plan}</div>
+        </div>
       </div>
     </aside>
   );
+}
+
+/** True when the guest has asked their system for less movement. */
+function usePrefersReducedMotion() {
+  const [calm, setCalm] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setCalm(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+  return calm;
+}
+
+/** Which cover frame is showing. Holds on the first one when asked to be calm. */
+function useCoverFrame(count: number, calm: boolean) {
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    if (calm || count < 2) return;
+    const id = window.setInterval(() => setI((n) => (n + 1) % count), 7000);
+    return () => window.clearInterval(id);
+  }, [calm, count]);
+  return i;
+}
+
+/** The photo drifts a few pixels against the page, so the parked ticket reads
+ *  as a window rather than a screenshot. */
+function useScrollDrift(calm: boolean) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (calm) {
+      el.style.transform = "";
+      return;
+    }
+    let frame = 0;
+    const paint = () => {
+      frame = 0;
+      const y = Math.max(-18, Math.min(18, (window.scrollY - 320) * 0.04));
+      el.style.transform = `translate3d(0,${y}px,0)`;
+    };
+    const onScroll = () => {
+      if (!frame) frame = window.requestAnimationFrame(paint);
+    };
+    paint();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (frame) window.cancelAnimationFrame(frame);
+    };
+  }, [calm]);
+  return ref;
+}
+
+/**
+ * Counts the total up to its new figure and returns a token that changes with
+ * every landing, which the sheen keys off. Under reduced motion the figure
+ * simply appears.
+ */
+function useRollingTotal(target: number | null, calm: boolean): [number | null, number] {
+  const [shown, setShown] = useState<number | null>(target);
+  const [token, setToken] = useState(0);
+  const from = useRef<number | null>(target);
+
+  useEffect(() => {
+    if (target === null) {
+      from.current = null;
+      setShown(null);
+      return;
+    }
+    const start = from.current;
+    if (start === null || calm || start === target) {
+      from.current = target;
+      setShown(target);
+      if (start !== null && start !== target) setToken((t) => t + 1);
+      return;
+    }
+    setToken((t) => t + 1);
+    const t0 = performance.now();
+    let frame = 0;
+    const step = (t: number) => {
+      const k = Math.min(1, (t - t0) / 520);
+      const eased = 1 - Math.pow(1 - k, 3);
+      setShown(Math.round(start + (target - start) * eased));
+      if (k < 1) frame = requestAnimationFrame(step);
+      else from.current = target;
+    };
+    frame = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(frame);
+  }, [target, calm]);
+
+  return [shown, token];
 }
 
 /**
@@ -2365,7 +2524,13 @@ export function BookingFlow({
         </span>
         <div>
           <div className="text-white sm:max-w-[58%] sm:pb-1">
-            <h1 className="mt-1.5 max-w-xl text-3xl text-white sm:text-4xl">{visuals.title}</h1>
+            <h1 className="mt-1.5 max-w-xl text-3xl text-white sm:text-4xl">
+              {titleLines(visuals.title).map((line) => (
+                <span key={line} className="block">
+                  {line}
+                </span>
+              ))}
+            </h1>
             <div className="mt-3 flex flex-wrap gap-1.5">
               {visuals.facts.map((f) => (
                 <span
@@ -2541,16 +2706,38 @@ export function BookingFlow({
 
         <div className="hidden lg:block">
           <SideTicket
-            image={visuals.image}
             cities={{ out: "Victoria", home: "Vancouver" }}
-            date={date}
             pax={pax}
-            boat={boat}
             tour={tour}
             outbound={outbound}
             ret={ret}
             breakdown={breakdown}
             flexCents={flexCents}
+            plan={
+              <DayCapsule
+                variant="cover"
+                align="right"
+                date={date}
+                onDate={(d) => setDate(d)}
+                ym={ym}
+                onMonthChange={(y, m) => setYm({ y, m })}
+                calDays={calDays}
+                calLoading={calLoading}
+                calError={calError}
+                today={today}
+                adults={adults}
+                setAdults={setAdults}
+                children={children}
+                setChildren={setChildren}
+                infants={infants}
+                setInfants={setInfants}
+                pregnant={pregnant}
+                setPregnant={setPregnant}
+                senior={senior}
+                setSenior={setSenior}
+                withBoatRules
+              />
+            }
           />
         </div>
       </div>

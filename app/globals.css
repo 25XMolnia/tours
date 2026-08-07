@@ -131,3 +131,22 @@
     animation: none;
   }
 }
+
+/* Блик, пробегающий по билету, когда сумма изменилась: как голограмма на
+   посадочном талоне, поймавшая свет. Один проход, потом класс снимается. */
+@keyframes ticket-sheen {
+  from {
+    transform: translateX(-120%);
+  }
+  to {
+    transform: translateX(120%);
+  }
+}
+.ticket-sheen {
+  animation: ticket-sheen 0.85s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ticket-sheen {
+    animation: none;
+  }
+}

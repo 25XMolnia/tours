@@ -1106,13 +1106,17 @@ export function DayCapsule({
   setSenior: (v: boolean) => void;
   withBoatRules: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  /* Two fields, two questions, two panes: tapping the day brings the
+     calendar, tapping the travellers brings the counters. One shared popover
+     would mean asking for a date every time someone adds an adult. */
+  const [pane, setPane] = useState<null | "day" | "who">(null);
+  const open = pane !== null;
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent | TouchEvent) => {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setPane(null);
     };
     document.addEventListener("mousedown", onDown);
     document.addEventListener("touchstart", onDown);
@@ -1152,21 +1156,38 @@ export function DayCapsule({
         /* Two rows reading as two rules of a boarding pass: DAY over the full
            date across the whole line, a hairline of white, then TRAVELLERS.
            The tap target is the full head, so there is no button to hunt for. */
-        <button
-          type="button"
-          onClick={() => setOpen((o) => !o)}
-          aria-expanded={open}
-          className="block w-full px-5 pb-3.5 pt-5 text-left"
-        >
-          <span className="block text-[9.5px] font-black tracking-[0.08em] text-sky">DAY</span>
-          <span
-            className={`block font-display text-[19px] font-extrabold leading-tight text-white ${
-              dateLong ? "" : "opacity-75"
-            }`}
+        <div className="px-5 pb-3.5 pt-5">
+          <button
+            type="button"
+            onClick={() => setPane((p) => (p === "day" ? null : "day"))}
+            aria-expanded={pane === "day"}
+            className="block w-full text-left"
           >
-            {dateLong ?? "Pick a day"}
-          </span>
-          <span className="mt-2 flex items-end justify-between border-t border-white/25 pt-2">
+            <span className="block text-[9.5px] font-black tracking-[0.08em] text-sky">DAY</span>
+            <span className="flex items-end justify-between gap-3">
+              <span
+                className={`block font-display text-[19px] font-extrabold leading-tight text-white ${
+                  dateLong ? "" : "opacity-75"
+                }`}
+              >
+                {dateLong ?? "Pick a day"}
+              </span>
+              {/* The fields are the buttons, so each needs one mark saying so:
+                  a chevron that turns down while its pane is open. */}
+              <span className="shrink-0 pb-1 text-white/90">
+                <IconChevronRight
+                  className={`h-4 w-4 transition-transform ${pane === "day" ? "rotate-90" : ""}`}
+                />
+              </span>
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setPane((p) => (p === "who" ? null : "who"))}
+            aria-expanded={pane === "who"}
+            className="mt-2 flex w-full items-end justify-between gap-3 border-t border-white/25 pt-2 text-left"
+          >
             <span className="min-w-0">
               <span className="block text-[9.5px] font-black tracking-[0.08em] text-sky">
                 TRAVELLERS
@@ -1175,19 +1196,17 @@ export function DayCapsule({
                 {whoLabel}
               </span>
             </span>
-            {/* The fields are the button, so they need one mark saying so: a
-                chevron that turns down while the picker is open. */}
             <span className="shrink-0 pb-0.5 text-white/90">
               <IconChevronRight
-                className={`h-4 w-4 transition-transform ${open ? "rotate-90" : ""}`}
+                className={`h-4 w-4 transition-transform ${pane === "who" ? "rotate-90" : ""}`}
               />
             </span>
-          </span>
-        </button>
+          </button>
+        </div>
       ) : (
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => setPane((p) => (p === null ? "day" : null))}
         aria-expanded={open}
         className="flex w-full items-center justify-between rounded-full bg-white p-1.5 pl-5 text-left shadow-ticket transition-shadow hover:shadow-lift sm:w-auto sm:justify-start"
       >
@@ -1213,42 +1232,62 @@ export function DayCapsule({
 
       {open && (
         <div
-          className={`absolute top-[calc(100%+10px)] z-30 w-[min(94vw,370px)] rounded-3xl border border-pale bg-white p-5 shadow-ticket ${
-            align === "right" ? "left-0 sm:left-auto sm:right-0" : "left-0"
-          }`}
+          className={`absolute top-[calc(100%+10px)] z-30 rounded-3xl border border-pale bg-white p-5 shadow-ticket ${
+            pane === "who" ? "w-[min(94vw,320px)]" : "w-[min(94vw,370px)]"
+          } ${align === "right" ? "left-0 sm:left-auto sm:right-0" : "left-0"}`}
         >
-          {calError && <ErrorNote text={calError} />}
-          <Calendar
-            year={ym.y}
-            month={ym.m}
-            days={calDays}
-            loading={calLoading && Object.keys(calDays).length === 0}
-            value={date}
-            minDate={today}
-            onSelect={(d) => onDate(d)}
-            onMonthChange={onMonthChange}
-          />
-          <div className="mt-4 grid gap-1 border-t-2 border-dashed border-pale pt-3">
-            <CapsuleStepper label="Adults" hint="13 plus" value={adults} min={1} max={8}
-              onChange={(v) => { setAdults(v); setInfants((i) => Math.min(i, v)); }} />
-            <CapsuleStepper label="Kids" hint="3 to 12" value={children} min={0} max={6} onChange={setChildren} />
-            <CapsuleStepper label="Infants" hint="Under 3, on a lap" value={infants} min={0} max={adults} onChange={setInfants} />
-          </div>
-          {withBoatRules && (
-            <div className="mt-2 grid gap-2 border-t-2 border-dashed border-pale pt-3">
-              <label className="flex cursor-pointer items-center gap-2.5 text-[12.5px] font-bold text-navy/70">
-                <input type="checkbox" checked={pregnant} onChange={(e) => setPregnant(e.target.checked)} className="h-4 w-4 accent-[#0072DA]" />
-                Someone is expecting
-              </label>
-              <label className="flex cursor-pointer items-center gap-2.5 text-[12.5px] font-bold text-navy/70">
-                <input type="checkbox" checked={senior} onChange={(e) => setSenior(e.target.checked)} className="h-4 w-4 accent-[#0072DA]" />
-                Someone is 65 or older
-              </label>
-            </div>
+          {/* In the pill pose the two questions still share one panel, since
+              that capsule is a single button. In the ticket head each field
+              opens only its own pane. */}
+          {(pane === "day" || variant === "pill") && (
+            <>
+              {calError && <ErrorNote text={calError} />}
+              <Calendar
+                year={ym.y}
+                month={ym.m}
+                days={calDays}
+                loading={calLoading && Object.keys(calDays).length === 0}
+                value={date}
+                minDate={today}
+                onSelect={(d) => {
+                  onDate(d);
+                  if (variant === "fields") setPane(null);
+                }}
+                onMonthChange={onMonthChange}
+              />
+            </>
           )}
+
+          {(pane === "who" || variant === "pill") && (
+            <>
+              <div
+                className={`grid gap-1 ${
+                  variant === "pill" ? "mt-4 border-t-2 border-dashed border-pale pt-3" : ""
+                }`}
+              >
+                <CapsuleStepper label="Adults" hint="13 plus" value={adults} min={1} max={8}
+                  onChange={(v) => { setAdults(v); setInfants((i) => Math.min(i, v)); }} />
+                <CapsuleStepper label="Kids" hint="3 to 12" value={children} min={0} max={6} onChange={setChildren} />
+                <CapsuleStepper label="Infants" hint="Under 3, on a lap" value={infants} min={0} max={adults} onChange={setInfants} />
+              </div>
+              {withBoatRules && (
+                <div className="mt-2 grid gap-2 border-t-2 border-dashed border-pale pt-3">
+                  <label className="flex cursor-pointer items-center gap-2.5 text-[12.5px] font-bold text-navy/70">
+                    <input type="checkbox" checked={pregnant} onChange={(e) => setPregnant(e.target.checked)} className="h-4 w-4 accent-[#0072DA]" />
+                    Someone is expecting
+                  </label>
+                  <label className="flex cursor-pointer items-center gap-2.5 text-[12.5px] font-bold text-navy/70">
+                    <input type="checkbox" checked={senior} onChange={(e) => setSenior(e.target.checked)} className="h-4 w-4 accent-[#0072DA]" />
+                    Someone is 65 or older
+                  </label>
+                </div>
+              )}
+            </>
+          )}
+
           <button
             type="button"
-            onClick={() => setOpen(false)}
+            onClick={() => setPane(null)}
             className="mt-4 w-full rounded-full bg-navy py-3 text-sm font-extrabold text-white transition-colors hover:bg-cobalt"
           >
             Done

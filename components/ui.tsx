@@ -1147,29 +1147,29 @@ export function DayCapsule({
           type="button"
           onClick={() => setOpen((o) => !o)}
           aria-expanded={open}
-          className="flex w-full items-end gap-5 rounded-t-3xl px-5 pb-3.5 pt-4 text-left transition-colors hover:bg-mist/70"
+          className="flex w-full items-end gap-5 px-5 pb-3.5 pt-8 text-left"
         >
           <span className="min-w-0">
-            <span className="block text-[9.5px] font-black tracking-[0.08em] text-cobalt">DAY</span>
+            <span className="block text-[9.5px] font-black tracking-[0.08em] text-sky">DAY</span>
             <span
-              className={`block font-display text-[15px] font-extrabold leading-tight ${
-                dateLabel ? "" : "text-navy/40"
+              className={`block font-display text-[15px] font-extrabold leading-tight text-white ${
+                dateLabel ? "" : "opacity-75"
               }`}
             >
               {dateLabel ?? "Pick a day"}
             </span>
           </span>
           <span className="min-w-0">
-            <span className="block text-[9.5px] font-black tracking-[0.08em] text-cobalt">
+            <span className="block text-[9.5px] font-black tracking-[0.08em] text-sky">
               TRAVELLERS
             </span>
-            <span className="block font-display text-[15px] font-extrabold leading-tight">
+            <span className="block font-display text-[15px] font-extrabold leading-tight text-white">
               {whoLabel}
             </span>
           </span>
           {/* The fields are the button, so they need one mark saying so: a
               chevron that turns down while the picker is open. */}
-          <span className="ml-auto shrink-0 pb-0.5 text-cobalt">
+          <span className="ml-auto shrink-0 pb-0.5 text-white/90">
             <IconChevronRight
               className={`h-4 w-4 transition-transform ${open ? "rotate-90" : ""}`}
             />
@@ -1278,10 +1278,14 @@ function CapsuleStepper({
  * The frames the hero cycles through, in order. A slow crossfade, never a
  * slideshow with chrome: the photo is scenery, not a gallery to operate.
  */
-export const COVER_SHOTS = [
+export const HERO_SHOTS = [
+  "https://loved-serenity-e0ed39558b.media.strapiapp.com/Victoria_Whale_Watching_W_4d01395347.webp",
   "https://i.redd.it/sunset-whale-watching-v0-h1y8a1zlp6if1.jpg?width=3050&format=pjpg&auto=webp&s=cf3135cd1cfc81e0655625c353849483ecfb0de9",
-  "https://t3.ftcdn.net/jpg/10/35/88/50/360_F_1035885083_P5DoiniSyFhg9aGvbgxN2xFJbTWdVHFs.jpg",
 ];
+
+/** The one photograph on the ticket. Still, so the stub stays paperwork. */
+export const TICKET_SHOT =
+  "https://t3.ftcdn.net/jpg/10/35/88/50/360_F_1035885083_P5DoiniSyFhg9aGvbgxN2xFJbTWdVHFs.jpg";
 
 /**
  * The stack of crossfading photographs behind a cover. Absolutely positioned,
@@ -1312,17 +1316,18 @@ export function CoverSlides({
 }
 
 /**
- * The desktop ticket: a paper boarding pass with no photograph. The day and
- * the party are printed at the head as two fields and open the picker on tap,
- * the day runs underneath as a three-stop mini-itinerary (dashes until the
- * plan lands), then a perforation, then the money in the stub. The hero
- * carries the scenery; the ticket carries the facts. The mobile dock is
- * untouched; this is the right rail's pose only.
+ * The ticket, boarding-pass anatomy: one still photograph across the head
+ * with the day and the party printed on it as two fields that open the
+ * picker on tap, the day as a three-stop mini-itinerary underneath (dashes
+ * until the plan lands), then a perforation, then the money in the stub.
+ * The hero runs the slideshow; the ticket keeps a single frame, so the rail
+ * stays calm next to it. The mobile dock is untouched.
  *
  * Its one motion: a changed total rolls up behind a single sweep of light,
  * and that stops dead under prefers-reduced-motion.
  */
 export function SideTicket({
+  image = TICKET_SHOT,
   cities,
   pax,
   tour,
@@ -1332,6 +1337,8 @@ export function SideTicket({
   flexCents,
   plan,
 }: {
+  /** The one photograph across the head of the ticket. */
+  image?: string;
   /** City names for the two flight stops, e.g. { out: "Victoria", home: "Vancouver" }. */
   cities: { out: string; home: string };
   pax: Pax;
@@ -1357,12 +1364,17 @@ export function SideTicket({
 
   return (
     <aside className="sticky top-[76px]">
-      <div className="relative rounded-3xl border border-pale bg-white shadow-ticket">
-        {/* The head sits outside the clipped body so its calendar can hang
-            past the edge; the notches below need that clip, the popover does not. */}
-        <div className="relative z-20 border-b border-pale">{plan}</div>
+      <div className="relative">
+        <div className="overflow-hidden rounded-3xl border border-pale bg-white shadow-ticket">
+          {/* The head: one photograph, a wash of navy so the white fields
+              always hold against it. */}
+          <div
+            className="relative h-[118px] bg-cover bg-center"
+            style={{
+              backgroundImage: `linear-gradient(180deg,rgba(0,45,98,.06) 28%,rgba(0,45,98,.7)), url(${image}), linear-gradient(170deg,#8FCBFF,#0E5FA8)`,
+            }}
+          />
 
-        <div className="relative overflow-hidden rounded-b-3xl">
           <div className="p-5 pb-4">
             {/* The day as a mini-itinerary, quiet type, dashes until it lands. */}
             <div className="grid grid-cols-[64px_1fr] gap-x-2.5 gap-y-1.5 text-[12.5px]">
@@ -1440,6 +1452,13 @@ export function SideTicket({
               }}
             />
           )}
+        </div>
+
+        {/* The plan control rides above the clipped ticket so its calendar
+            can hang past the edge; the notches need that clip, the popover
+            does not. */}
+        <div className="absolute inset-x-0 top-0 z-20 h-[118px]">
+          <div className="absolute inset-x-0 bottom-0">{plan}</div>
         </div>
       </div>
     </aside>
@@ -2365,7 +2384,7 @@ export function BookingFlow({
   /* One clock for every cover on the page: the hero and the ticket stub turn
      to the same frame, so the two photographs never argue with each other. */
   const calmCovers = usePrefersReducedMotion();
-  const frame = useCoverFrame(COVER_SHOTS.length, calmCovers);
+  const frame = useCoverFrame(HERO_SHOTS.length, calmCovers);
   const [tourPk, setTourPk] = useState<string | null>(null);
   const [outboundId, setOutboundId] = useState<string | null>(null);
   const [returnId, setReturnId] = useState<string | null>(null);
@@ -2501,7 +2520,7 @@ export function BookingFlow({
         {/* The photographs and their wash live in their own clipped layer, so
             the capsule can still hang past the bottom edge. */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl">
-          <CoverSlides images={COVER_SHOTS} frame={frame} />
+          <CoverSlides images={HERO_SHOTS} frame={frame} />
           <div
             className="absolute inset-0"
             style={{ background: "linear-gradient(180deg,rgba(0,45,98,0) 30%,rgba(0,45,98,.62))" }}
@@ -2533,33 +2552,7 @@ export function BookingFlow({
               ))}
             </div>
           </div>
-          {/* Below lg the ticket is hidden and this capsule is the only way in;
-              from lg the ticket head takes the job, so the capsule steps aside
-              rather than asking the same question twice on one screen. */}
-          <div className="mt-4 sm:absolute sm:-bottom-6 sm:right-5 sm:mt-0 lg:hidden">
-            <DayCapsule
-              align="right"
-              date={date}
-              onDate={(d) => setDate(d)}
-              ym={ym}
-              onMonthChange={(y, m) => setYm({ y, m })}
-              calDays={calDays}
-              calLoading={calLoading}
-              calError={calError}
-              today={today}
-              adults={adults}
-              setAdults={setAdults}
-              children={children}
-              setChildren={setChildren}
-              infants={infants}
-              setInfants={setInfants}
-              pregnant={pregnant}
-              setPregnant={setPregnant}
-              senior={senior}
-              setSenior={setSenior}
-              withBoatRules
-            />
-          </div>
+
         </div>
       </div>
 
@@ -2606,7 +2599,7 @@ export function BookingFlow({
           <div className="mt-4">
             {combosError && <ErrorNote text={combosError} />}
             {!date ? (
-              <Hint text="Pick a day in the capsule above and the times show up here." />
+              <Hint text="Pick a day on the ticket and the times show up here." />
             ) : combosLoading ? (
               <Hint text="Checking the boats and the flight board" pulse />
             ) : boatTours.length === 0 ? (
@@ -2690,7 +2683,10 @@ export function BookingFlow({
           </div>
         </div>
 
-        <div className="hidden lg:block">
+        {/* With the hero capsule gone, the ticket head is the only door to
+            the day and the party, so below lg it can no longer hide: it leads
+            the stack instead, and from lg it returns to the right rail. */}
+        <div className="order-first lg:order-1">
           <SideTicket
             cities={{ out: "Victoria", home: "Vancouver" }}
             pax={pax}

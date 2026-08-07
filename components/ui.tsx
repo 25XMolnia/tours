@@ -1133,6 +1133,15 @@ export function DayCapsule({
         day: "numeric",
       })
     : null;
+  /* The ticket head has the whole line to itself, so the day gets its full
+     name there: "Wednesday, Aug 12" rather than the capsule's "Wed". */
+  const dateLong = date
+    ? new Date(`${date}T12:00:00`).toLocaleDateString("en-CA", {
+        weekday: "long",
+        month: "short",
+        day: "numeric",
+      })
+    : null;
 
   return (
     <div
@@ -1140,39 +1149,39 @@ export function DayCapsule({
       className={variant === "fields" ? "relative block" : "relative block sm:inline-block"}
     >
       {variant === "fields" ? (
-        /* The two fields are the whole control: a cobalt cap for the label,
-           the answer under it, nothing else. The tap target runs the full
-           width of the ticket head, so there is no button to hunt for. */
+        /* Two rows reading as two rules of a boarding pass: DAY over the full
+           date across the whole line, a hairline of white, then TRAVELLERS.
+           The tap target is the full head, so there is no button to hunt for. */
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
           aria-expanded={open}
-          className="flex w-full items-end gap-5 px-5 pb-3.5 pt-8 text-left"
+          className="block w-full px-5 pb-3.5 pt-5 text-left"
         >
-          <span className="min-w-0">
-            <span className="block text-[9.5px] font-black tracking-[0.08em] text-sky">DAY</span>
-            <span
-              className={`block font-display text-[15px] font-extrabold leading-tight text-white ${
-                dateLabel ? "" : "opacity-75"
-              }`}
-            >
-              {dateLabel ?? "Pick a day"}
-            </span>
+          <span className="block text-[9.5px] font-black tracking-[0.08em] text-sky">DAY</span>
+          <span
+            className={`block font-display text-[19px] font-extrabold leading-tight text-white ${
+              dateLong ? "" : "opacity-75"
+            }`}
+          >
+            {dateLong ?? "Pick a day"}
           </span>
-          <span className="min-w-0">
-            <span className="block text-[9.5px] font-black tracking-[0.08em] text-sky">
-              TRAVELLERS
+          <span className="mt-2 flex items-end justify-between border-t border-white/25 pt-2">
+            <span className="min-w-0">
+              <span className="block text-[9.5px] font-black tracking-[0.08em] text-sky">
+                TRAVELLERS
+              </span>
+              <span className="block font-display text-[15px] font-extrabold leading-tight text-white">
+                {whoLabel}
+              </span>
             </span>
-            <span className="block font-display text-[15px] font-extrabold leading-tight text-white">
-              {whoLabel}
+            {/* The fields are the button, so they need one mark saying so: a
+                chevron that turns down while the picker is open. */}
+            <span className="shrink-0 pb-0.5 text-white/90">
+              <IconChevronRight
+                className={`h-4 w-4 transition-transform ${open ? "rotate-90" : ""}`}
+              />
             </span>
-          </span>
-          {/* The fields are the button, so they need one mark saying so: a
-              chevron that turns down while the picker is open. */}
-          <span className="ml-auto shrink-0 pb-0.5 text-white/90">
-            <IconChevronRight
-              className={`h-4 w-4 transition-transform ${open ? "rotate-90" : ""}`}
-            />
           </span>
         </button>
       ) : (
@@ -1369,7 +1378,7 @@ export function SideTicket({
           {/* The head: one photograph, a wash of navy so the white fields
               always hold against it. */}
           <div
-            className="relative h-[118px] bg-cover bg-center"
+            className="relative h-[134px] bg-cover bg-center"
             style={{
               backgroundImage: `linear-gradient(180deg,rgba(0,45,98,.06) 28%,rgba(0,45,98,.7)), url(${image}), linear-gradient(170deg,#8FCBFF,#0E5FA8)`,
             }}
@@ -1457,7 +1466,7 @@ export function SideTicket({
         {/* The plan control rides above the clipped ticket so its calendar
             can hang past the edge; the notches need that clip, the popover
             does not. */}
-        <div className="absolute inset-x-0 top-0 z-20 h-[118px]">
+        <div className="absolute inset-x-0 top-0 z-20 h-[134px]">
           <div className="absolute inset-x-0 bottom-0">{plan}</div>
         </div>
       </div>

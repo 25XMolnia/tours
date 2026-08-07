@@ -18,9 +18,9 @@ export type Pax = {
   females: number;
   /** Adults, 13 plus, gender X or unspecified. Standard weight 196 lb. */
   x: number;
-  /** Ages 3 to 12. 75 lb. Take a seat on the plane and the boat. */
+  /** Ages 2 to 12. 75 lb. Take a seat on the plane and the boat. */
   children: number;
-  /** Under 3, on an adult's lap. 30 lb. No seat, no fare. */
+  /** Under 2, on an adult's lap. 30 lb. No seat, no fare. */
   infants: number;
   pregnant: boolean;
   /** Someone in the group is 65 or older. Boat rule only. */
@@ -96,7 +96,7 @@ export type TourSlot = {
   priceSeniorCents: number;
   /**
    * The boat's own infant fare. Real money: the semi-covered vessel sells
-   * Infant (ages 0-2) at its own rate, which is nothing like free. The open
+   * Infant (under 2) at its own rate, which is nothing like free. The open
    * vessel has no infant type at all and leaves this at zero.
    */
   priceInfantCents: number;
@@ -146,7 +146,7 @@ export type Contact = {
 };
 
 export type PriceBreakdown = {
-  /** Both seaplane legs together, kids at the seat price, infants free. */
+  /** Both seaplane legs together, children at the seat price, infants free. */
   flightsCents: number;
   outboundCents: number;
   returnCents: number;
@@ -585,8 +585,8 @@ export function ladderFor(previewCents: number, count: number): GuestLadder {
  *
  *   male / X   196 lb
  *   female     154 lb
- *   child      75 lb   (3 to 12, takes a seat)
- *   infant     30 lb   (under 3, on a lap: weight counts, no seat, no fare)
+ *   child      75 lb   (2 to 12, takes a seat)
+ *   infant     30 lb   (under 2, on a lap: weight counts, no seat, no fare)
  */
 export const STANDARD_WEIGHT_LBS = {
   male: 196,
@@ -600,7 +600,7 @@ export function adultCount(pax: Pax): number {
   return pax.males + pax.females + pax.x;
 }
 
-/** Travellers who occupy a seat: adults and kids. Infants ride on a lap. */
+/** Travellers who occupy a seat: adults and children. Infants ride on a lap. */
 export function seatsNeeded(pax: Pax): number {
   return adultCount(pax) + pax.children;
 }
@@ -1968,7 +1968,7 @@ export async function createTourBooking(
  * If the agreement changes, change AGENT_NET_RATES and nothing else.
  */
 
-/** The site's three party buckets. Adults 13-64, kids 3-12, seniors 65+. */
+/** The site's three party buckets. Adults 13-64, children 2-12, seniors 65+. */
 export type GuestType = "adult" | "child" | "senior";
 
 /**

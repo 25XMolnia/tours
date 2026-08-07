@@ -270,7 +270,7 @@ export function HomeTop({
 
   const whoLabel =
     `${adults} ${adults === 1 ? "adult" : "adults"}` +
-    (children > 0 ? `, ${children} ${children === 1 ? "kid" : "kids"}` : "") +
+    (children > 0 ? `, ${children} ${children === 1 ? "child" : "children"}` : "") +
     (infants > 0 ? `, ${infants} ${infants === 1 ? "infant" : "infants"}` : "");
   const dateLabel = new Date(`${date}T12:00:00`).toLocaleDateString("en-CA", {
     weekday: "short",
@@ -413,10 +413,10 @@ export function HomeTop({
             {whoOpen && (
               <div className="absolute left-0 top-[calc(100%+10px)] z-20 w-72 rounded-3xl border border-pale bg-white p-4 shadow-ticket">
                 <MiniStepper label="Adults" hint="13 plus" value={adults} min={1} max={8} onChange={setAdults} />
-                <MiniStepper label="Kids" hint="3 to 12" value={children} min={0} max={6} onChange={setChildren} />
+                <MiniStepper label="Children" hint="2 to 12" value={children} min={0} max={6} onChange={setChildren} />
                 <MiniStepper
                   label="Infants"
-                  hint="Under 3, on a lap"
+                  hint="Under 2, on a lap"
                   value={infants}
                   min={0}
                   max={adults}
@@ -629,9 +629,8 @@ export function Calendar({
  *
  * Three stops, in the order they happen, each with its alternatives sitting
  * underneath as times. Between the stops sits the gap that changing a time
- * actually moves. No icons and no connector line: the anchor of each stop is
- * the departure time itself, big and tabular, which updates as the guest
- * picks, so the data is the graphic.
+ * actually moves. No icons and no connector line: each stop states its own
+ * hours on its own line, so the data is the graphic.
  */
 export function Timeline({
   tours,
@@ -659,8 +658,6 @@ export function Timeline({
   return (
     <div>
       <Stop
-        anchor={outbound ? fmt12(outbound.dep) : null}
-        label="out"
         title="Fly to Victoria"
         time={outbound ? `${fmt12(outbound.dep)} to ${fmt12(outbound.arr)}` : "Pick a flight"}
         price={outbound ? flightPriceCents(outbound, pax) : null}
@@ -682,8 +679,6 @@ export function Timeline({
       )}
 
       <Stop
-        anchor={tour ? fmt12(tour.start) : null}
-        label="boat"
         title="Whale watching"
         time={tour ? `${fmt12(tour.start)} to ${fmt12(tour.end)}` : "Pick a sailing"}
         price={null}
@@ -711,8 +706,6 @@ export function Timeline({
       )}
 
       <Stop
-        anchor={ret ? fmt12(ret.dep) : null}
-        label="home"
         title="Fly to Vancouver"
         time={ret ? `${fmt12(ret.dep)} to ${fmt12(ret.arr)}` : "Pick a flight"}
         price={ret ? flightPriceCents(ret, pax) : null}
@@ -769,33 +762,20 @@ function FlightChips({
 }
 
 function Stop({
-  anchor,
-  label,
   title,
   time,
   price,
   last,
   children,
 }: {
-  /** The departure time of the picked leg, the stop's whole left column. */
-  anchor: string | null;
-  label: string;
   title: string;
   time: string;
   price: number | null;
   last?: boolean;
   children: React.ReactNode;
 }) {
-  const [big, meridiem] = anchor ? [anchor.replace(/ (am|pm)$/, ""), anchor.split(" ").pop()] : ["--:--", null];
   return (
-    <div className={`grid grid-cols-[74px_1fr] gap-4 ${last ? "" : "pb-2"}`}>
-      <div className={`pt-1 ${anchor ? "" : "opacity-35"}`}>
-        <p className="font-display text-[19px] font-black leading-none tabular-nums">
-          {big}
-          {meridiem && <span className="ml-0.5 text-[11px] font-extrabold">{meridiem}</span>}
-        </p>
-        <p className="mt-1 text-[11px] font-extrabold text-cobalt">{label}</p>
-      </div>
+    <div className={last ? "" : "pb-2"}>
       <div className="min-w-0 pb-4">
         <div className="flex flex-wrap items-baseline justify-between gap-x-3">
           <p className="text-sm font-bold">{title}</p>
@@ -812,7 +792,7 @@ function Stop({
 
 function Gap({ text }: { text: string }) {
   return (
-    <p className="mb-4 ml-[90px] text-xs font-extrabold text-navy/45">{text}</p>
+    <p className="mb-4 text-xs font-extrabold text-navy/45">{text}</p>
   );
 }
 
@@ -990,12 +970,12 @@ export function TravellersRibbon({
         />
       </Cell>
       <Cell>
-        <StepperInline label="Kids" hint="3 to 12" value={children} min={0} max={6} onChange={setChildren} />
+        <StepperInline label="Children" hint="2 to 12" value={children} min={0} max={6} onChange={setChildren} />
       </Cell>
       <Cell>
         <StepperInline
           label="Infants"
-          hint="Under 3, on a lap"
+          hint="Under 2, on a lap"
           value={infants}
           min={0}
           max={adults}
@@ -1128,7 +1108,7 @@ export function DayCapsule({
 
   const whoLabel =
     `${adults} ${adults === 1 ? "adult" : "adults"}` +
-    (children > 0 ? `, ${children} ${children === 1 ? "kid" : "kids"}` : "") +
+    (children > 0 ? `, ${children} ${children === 1 ? "child" : "children"}` : "") +
     (infants > 0 ? `, ${infants} ${infants === 1 ? "infant" : "infants"}` : "");
   const dateLabel = date
     ? new Date(`${date}T12:00:00`).toLocaleDateString("en-CA", {
@@ -1267,8 +1247,8 @@ export function DayCapsule({
               >
                 <CapsuleStepper label="Adults" hint="13 plus" value={adults} min={1} max={8}
                   onChange={(v) => { setAdults(v); setInfants((i) => Math.min(i, v)); }} />
-                <CapsuleStepper label="Kids" hint="3 to 12" value={children} min={0} max={6} onChange={setChildren} />
-                <CapsuleStepper label="Infants" hint="Under 3, on a lap" value={infants} min={0} max={adults} onChange={setInfants} />
+                <CapsuleStepper label="Children" hint="2 to 12" value={children} min={0} max={6} onChange={setChildren} />
+                <CapsuleStepper label="Infants" hint="Under 2, on a lap" value={infants} min={0} max={adults} onChange={setInfants} />
               </div>
               {withBoatRules && (
                 <div className="mt-2 grid gap-2 border-t-2 border-dashed border-pale pt-3">

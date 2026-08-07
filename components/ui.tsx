@@ -1147,9 +1147,9 @@ export function DayCapsule({
           type="button"
           onClick={() => setOpen((o) => !o)}
           aria-expanded={open}
-          className="flex w-full items-end gap-6 rounded-t-3xl px-5 pb-3.5 pt-4 text-left transition-colors hover:bg-mist/70"
+          className="flex w-full items-end gap-5 rounded-t-3xl px-5 pb-3.5 pt-4 text-left transition-colors hover:bg-mist/70"
         >
-          <span>
+          <span className="min-w-0">
             <span className="block text-[9.5px] font-black tracking-[0.08em] text-cobalt">DAY</span>
             <span
               className={`block font-display text-[15px] font-extrabold leading-tight ${
@@ -1159,13 +1159,20 @@ export function DayCapsule({
               {dateLabel ?? "Pick a day"}
             </span>
           </span>
-          <span>
+          <span className="min-w-0">
             <span className="block text-[9.5px] font-black tracking-[0.08em] text-cobalt">
               TRAVELLERS
             </span>
             <span className="block font-display text-[15px] font-extrabold leading-tight">
               {whoLabel}
             </span>
+          </span>
+          {/* The fields are the button, so they need one mark saying so: a
+              chevron that turns down while the picker is open. */}
+          <span className="ml-auto shrink-0 pb-0.5 text-cobalt">
+            <IconChevronRight
+              className={`h-4 w-4 transition-transform ${open ? "rotate-90" : ""}`}
+            />
           </span>
         </button>
       ) : (
@@ -2526,7 +2533,10 @@ export function BookingFlow({
               ))}
             </div>
           </div>
-          <div className="mt-4 sm:absolute sm:-bottom-6 sm:right-5 sm:mt-0">
+          {/* Below lg the ticket is hidden and this capsule is the only way in;
+              from lg the ticket head takes the job, so the capsule steps aside
+              rather than asking the same question twice on one screen. */}
+          <div className="mt-4 sm:absolute sm:-bottom-6 sm:right-5 sm:mt-0 lg:hidden">
             <DayCapsule
               align="right"
               date={date}

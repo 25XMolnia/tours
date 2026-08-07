@@ -627,10 +627,11 @@ export function Calendar({
 /**
  * The day as a strip you can rearrange.
  *
- * Three stops, in the order they happen, each with its alternatives sitting
- * underneath as times. Between the stops sits the gap that changing a time
- * actually moves. No icons and no connector line: each stop states its own
- * hours on its own line, so the data is the graphic.
+ * Three stops down a pier: a dashed line with a bollard at each one, the
+ * chosen hours under the name, the alternatives as chips below. Between the
+ * stops sit the waits, which is the thing changing a time actually moves.
+ * The boat gets the yellow bollard because it is the fixed point of the day;
+ * a stop nobody has answered yet keeps a hollow one.
  */
 export function Timeline({
   tours,
@@ -656,11 +657,24 @@ export function Timeline({
   const ret = tour?.returns.find((f) => f.id === returnId) ?? null;
 
   return (
-    <div>
+    /* The pier: one dashed line down the left, a bollard at every stop. The
+       waits between the stops sit on the line too, because a wait is part of
+       the day, not a footnote to it. */
+    <div className="relative pl-8">
+      <span
+        aria-hidden="true"
+        className="absolute bottom-5 left-[11px] top-2 w-[3px] rounded-full"
+        style={{
+          background:
+            "repeating-linear-gradient(180deg,var(--pale) 0 8px,transparent 8px 15px)",
+        }}
+      />
+
       <Stop
         title="Fly to Victoria"
         time={outbound ? `${fmt12(outbound.dep)} to ${fmt12(outbound.arr)}` : "Pick a flight"}
         price={outbound ? flightPriceCents(outbound, pax) : null}
+        done={outbound !== null}
       >
         {tour ? (
           <FlightChips
@@ -682,6 +696,8 @@ export function Timeline({
         title="Whale watching"
         time={tour ? `${fmt12(tour.start)} to ${fmt12(tour.end)}` : "Pick a sailing"}
         price={null}
+        done={tour !== null}
+        boat
       >
         {tour && !tour.seatsUnknown && (
           <p className="mb-2 text-xs text-navy/55">{tour.seatsLeft} seats left on the boat</p>
@@ -702,19 +718,22 @@ export function Timeline({
       </Stop>
 
       {ret && tour && (
-        <Gap text={`${fmtWait(minutesBetween(tour.end, ret.dep))} from the boat to your flight home`} />
+        <Gap
+          text={`${fmtWait(minutesBetween(tour.end, ret.dep))} from the boat to your flight to Vancouver`}
+        />
       )}
 
       <Stop
         title="Fly to Vancouver"
         time={ret ? `${fmt12(ret.dep)} to ${fmt12(ret.arr)}` : "Pick a flight"}
         price={ret ? flightPriceCents(ret, pax) : null}
+        done={ret !== null}
         last
       >
         {tour ? (
           <FlightChips legs={tour.returns} pax={pax} selected={returnId} onPick={onPickReturn} />
         ) : (
-          <Muted text="Same here: the sailing sets which flights get you home." />
+          <Muted text="Same here: the sailing sets which flights can take you to Vancouver." />
         )}
       </Stop>
     </div>
@@ -765,35 +784,46 @@ function Stop({
   title,
   time,
   price,
+  done,
+  boat,
   last,
   children,
 }: {
   title: string;
   time: string;
   price: number | null;
+  /** Whether this stop has been answered; an empty bollard stays hollow. */
+  done?: boolean;
+  /** The boat is the fixed point of the day, so its bollard is the yellow one. */
+  boat?: boolean;
   last?: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <div className={last ? "" : "pb-2"}>
-      <div className="min-w-0 pb-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-          <p className="text-sm font-bold">{title}</p>
-          {price !== null && (
-            <p className="font-display text-sm font-bold tabular-nums">{fmtMoney(price)}</p>
-          )}
-        </div>
-        <p className="mt-0.5 font-display text-base font-bold tabular-nums">{time}</p>
-        <div className="mt-2.5">{children}</div>
-      </div>
+    <div className={`relative min-w-0 ${last ? "" : "pb-1"}`}>
+      <span
+        aria-hidden="true"
+        className={[
+          "absolute -left-[30px] top-1 h-[17px] w-[17px] rounded-full border-[3px] bg-white",
+          !done ? "border-pale" : boat ? "border-navy bg-smart" : "border-cobalt",
+        ].join(" ")}
+      />
+      <p className="text-[15px] font-black leading-tight">{title}</p>
+      <p
+        className={`font-display text-[13px] font-extrabold tabular-nums ${
+          done ? "text-cobalt" : "text-navy/35"
+        }`}
+      >
+        {time}
+        {price !== null && `, ${fmtMoney(price)}`}
+      </p>
+      <div className="mb-4 mt-2.5">{children}</div>
     </div>
   );
 }
 
 function Gap({ text }: { text: string }) {
-  return (
-    <p className="mb-4 text-xs font-extrabold text-navy/45">{text}</p>
-  );
+  return <p className="-mt-2 mb-4 text-[11.5px] font-extrabold text-navy/45">{text}</p>;
 }
 
 function Muted({ text }: { text: string }) {

@@ -673,7 +673,6 @@ export function Timeline({
       <Stop
         title="Fly to Victoria"
         time={outbound ? `${fmt12(outbound.dep)} to ${fmt12(outbound.arr)}` : "Pick a flight"}
-        price={outbound ? flightPriceCents(outbound, pax) : null}
         done={outbound !== null}
       >
         {tour ? (
@@ -695,7 +694,6 @@ export function Timeline({
       <Stop
         title="Whale watching"
         time={tour ? `${fmt12(tour.start)} to ${fmt12(tour.end)}` : "Pick a sailing"}
-        price={null}
         done={tour !== null}
         boat
       >
@@ -726,7 +724,6 @@ export function Timeline({
       <Stop
         title="Fly to Vancouver"
         time={ret ? `${fmt12(ret.dep)} to ${fmt12(ret.arr)}` : "Pick a flight"}
-        price={ret ? flightPriceCents(ret, pax) : null}
         done={ret !== null}
         last
       >
@@ -783,7 +780,6 @@ function FlightChips({
 function Stop({
   title,
   time,
-  price,
   done,
   boat,
   last,
@@ -791,7 +787,6 @@ function Stop({
 }: {
   title: string;
   time: string;
-  price: number | null;
   /** Whether this stop has been answered; an empty bollard stays hollow. */
   done?: boolean;
   /** The boat is the fixed point of the day, so its bollard is the yellow one. */
@@ -815,7 +810,6 @@ function Stop({
         }`}
       >
         {time}
-        {price !== null && `, ${fmtMoney(price)}`}
       </p>
       <div className="mb-4 mt-2.5">{children}</div>
     </div>

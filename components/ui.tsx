@@ -1368,11 +1368,8 @@ export function CoverSlides({
  * with the day and the party printed on it as two fields that open the
  * picker on tap, the day as a three-stop mini-itinerary underneath (dashes
  * until the plan lands), then a perforation, then the money in the stub.
- * The hero runs the slideshow; the ticket keeps a single frame, so the rail
- * stays calm next to it. The mobile dock is untouched.
- *
- * Its one motion: a changed total rolls up behind a single sweep of light,
- * and that stops dead under prefers-reduced-motion.
+ * The hero runs the slideshow; the ticket keeps a single frame and holds
+ * still, so the rail stays calm next to it. The mobile dock is untouched.
  */
 export function SideTicket({
   image = TICKET_SHOT,
@@ -1406,9 +1403,6 @@ export function SideTicket({
   const fullCents = complete ? breakdown.totalAllInCents + flexCents : null;
   const deal = fullCents !== null ? applyPackageDeal(fullCents) : null;
   const itemised = flexCents > 0 || (deal?.saveCents ?? 0) > 0;
-
-  const calm = usePrefersReducedMotion();
-  const [rolled, sheen] = useRollingTotal(deal?.totalCents ?? null, calm);
 
   return (
     <aside className="sticky top-[76px]">
@@ -1463,7 +1457,7 @@ export function SideTicket({
                     itemised ? "mt-2 border-t-2 border-dashed border-pale pt-2.5" : "mt-0.5"
                   }`}
                 >
-                  {fmtMoney(rolled ?? deal.totalCents)}
+                  {fmtMoney(deal.totalCents)}
                 </p>
                 <p className="mt-1 text-[11px] font-bold text-navy/50">for everyone, all in</p>
                 {bookHref && (
@@ -1486,20 +1480,6 @@ export function SideTicket({
               </p>
             )}
           </div>
-
-          {/* One sweep of light when the total changes, so the new figure is
-              seen rather than merely displayed. */}
-          {sheen > 0 && (
-            <span
-              key={sheen}
-              aria-hidden="true"
-              className="ticket-sheen pointer-events-none absolute inset-0"
-              style={{
-                background:
-                  "linear-gradient(105deg,transparent 38%,rgba(255,255,255,.5) 50%,transparent 62%)",
-              }}
-            />
-          )}
         </div>
 
         {/* The plan control rides above the clipped ticket so its calendar
@@ -1535,46 +1515,6 @@ function useCoverFrame(count: number, calm: boolean) {
     return () => window.clearInterval(id);
   }, [calm, count]);
   return i;
-}
-
-/**
- * Counts the total up to its new figure and returns a token that changes with
- * every landing, which the sheen keys off. Under reduced motion the figure
- * simply appears.
- */
-function useRollingTotal(target: number | null, calm: boolean): [number | null, number] {
-  const [shown, setShown] = useState<number | null>(target);
-  const [token, setToken] = useState(0);
-  const from = useRef<number | null>(target);
-
-  useEffect(() => {
-    if (target === null) {
-      from.current = null;
-      setShown(null);
-      return;
-    }
-    const start = from.current;
-    if (start === null || calm || start === target) {
-      from.current = target;
-      setShown(target);
-      if (start !== null && start !== target) setToken((t) => t + 1);
-      return;
-    }
-    setToken((t) => t + 1);
-    const t0 = performance.now();
-    let frame = 0;
-    const step = (t: number) => {
-      const k = Math.min(1, (t - t0) / 520);
-      const eased = 1 - Math.pow(1 - k, 3);
-      setShown(Math.round(start + (target - start) * eased));
-      if (k < 1) frame = requestAnimationFrame(step);
-      else from.current = target;
-    };
-    frame = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(frame);
-  }, [target, calm]);
-
-  return [shown, token];
 }
 
 /**
@@ -2651,7 +2591,7 @@ export function BookingFlow({
             ) : combosLoading ? (
               <Hint text="Checking the boats and the flight board" pulse />
             ) : boatTours.length === 0 ? (
-              <Hint text="No sailings pair with flights that can carry your group that day. A seaplane sells out by weight as well as seats, so a different date, or the other boat, often does it." />
+              <Hint text="No sailings pair with flights that can carry your group that day." />
             ) : custom ? (
               <div className="rounded-3xl border border-pale bg-white p-6 shadow-ticket sm:p-7">
                 <Timeline

@@ -225,6 +225,7 @@ export default function TourPage({
 
       {tour.booking.kind === "flights" ? (
         <FlightsFlow
+          image={tour.image}
           variants={tour.booking.variants}
           ground={tour.booking.ground}
           {...initial}

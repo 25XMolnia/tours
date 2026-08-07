@@ -742,14 +742,16 @@ function FlightChips({
   pax,
   selected,
   onPick,
+  emptyText = "No flight can carry your group around this sailing.",
 }: {
   legs: FlightLeg[];
   pax: Pax;
   selected: string | null;
   onPick: (id: string) => void;
+  emptyText?: string;
 }) {
   if (legs.length === 0) {
-    return <Muted text="No flight can carry your group around this sailing." />;
+    return <Muted text={emptyText} />;
   }
   return (
     <div className="flex flex-wrap gap-2">
@@ -845,191 +847,6 @@ export function qsFrom(pax: Pax): string {
     pregnant: pax.pregnant ? "1" : "0",
     senior: pax.senior ? "1" : "0",
   }).toString();
-}
-
-export function Thread() {
-  return (
-    <div
-      className="absolute bottom-10 left-[41px] top-16 hidden w-[3px] sm:block"
-      style={{
-        backgroundImage:
-          "repeating-linear-gradient(180deg,#FFDE00 0 10px,transparent 10px 22px)",
-      }}
-      aria-hidden="true"
-    />
-  );
-}
-
-export function Station({
-  n,
-  title,
-  note,
-  last,
-  children,
-}: {
-  n: number;
-  title: string;
-  note?: string;
-  last?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className={`relative sm:pl-[76px] ${last ? "" : "mb-14"}`}>
-      <span
-        className="absolute left-0 top-0 hidden h-11 w-11 items-center justify-center rounded-full bg-navy font-display text-[17px] font-black text-smart ring-[6px] ring-mist sm:flex"
-        aria-hidden="true"
-      >
-        {n}
-      </span>
-      <h2 className="text-3xl">{title}</h2>
-      {note && <p className="mt-1 text-[15px] text-navy/60">{note}</p>}
-      <div className="mt-5">{children}</div>
-    </section>
-  );
-}
-
-export function Cell({ children, className }: { children: React.ReactNode; className?: string }) {
-  return (
-    <div
-      className={`flex min-w-[190px] flex-1 items-center rounded-2xl bg-mist px-4 py-3 ${className ?? ""}`}
-    >
-      {children}
-    </div>
-  );
-}
-
-export function StepperInline({
-  label,
-  hint,
-  value,
-  min,
-  max,
-  onChange,
-}: {
-  label: string;
-  hint: string;
-  value: number;
-  min: number;
-  max: number;
-  onChange: (v: number) => void;
-}) {
-  return (
-    <div className="flex w-full items-center justify-between gap-3">
-      <div>
-        <p className="text-sm font-extrabold">{label}</p>
-        <p className="text-[11.5px] font-semibold text-navy/55">{hint}</p>
-      </div>
-      <div className="flex items-center gap-2.5">
-        <button
-          type="button"
-          className="chip h-8 w-8 px-0 py-0 leading-none"
-          onClick={() => onChange(Math.max(min, value - 1))}
-          disabled={value <= min}
-          aria-label={`Fewer ${label}`}
-        >
-          -
-        </button>
-        <span className="w-4 text-center font-display text-base font-extrabold tabular-nums">
-          {value}
-        </span>
-        <button
-          type="button"
-          className="chip h-8 w-8 px-0 py-0 leading-none"
-          onClick={() => onChange(Math.min(max, value + 1))}
-          disabled={value >= max}
-          aria-label={`More ${label}`}
-        >
-          +
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/**
- * The whole "who's coming" ribbon. A seaplane is loaded by weight, and every
- * adult is planned at the male standard, the heaviest one, so the seat counts
- * on screen can only be pessimistic, never wrong. The interface says nothing
- * about it.
- */
-export function TravellersRibbon({
-  adults,
-  setAdults,
-  children,
-  setChildren,
-  infants,
-  setInfants,
-  pregnant,
-  setPregnant,
-  senior,
-  setSenior,
-  withBoatRules,
-}: {
-  adults: number;
-  setAdults: (v: number) => void;
-  children: number;
-  setChildren: (v: number) => void;
-  infants: number;
-  setInfants: React.Dispatch<React.SetStateAction<number>>;
-  pregnant: boolean;
-  setPregnant: (v: boolean) => void;
-  senior: boolean;
-  setSenior: (v: boolean) => void;
-  /** The expecting and 65-plus checkboxes matter to the boat, not the plane. */
-  withBoatRules: boolean;
-}) {
-  return (
-    <div className="flex flex-wrap items-stretch gap-2.5 rounded-3xl border border-pale bg-white p-2.5 shadow-ticket">
-      <Cell>
-        <StepperInline
-          label="Adults"
-          hint="13 plus"
-          value={adults}
-          min={1}
-          max={8}
-          onChange={(v) => {
-            setAdults(v);
-            setInfants((i) => Math.min(i, v));
-          }}
-        />
-      </Cell>
-      <Cell>
-        <StepperInline label="Children" hint="2 to 12" value={children} min={0} max={6} onChange={setChildren} />
-      </Cell>
-      <Cell>
-        <StepperInline
-          label="Infants"
-          hint="Under 2, on a lap"
-          value={infants}
-          min={0}
-          max={adults}
-          onChange={setInfants}
-        />
-      </Cell>
-      {withBoatRules && (
-        <Cell className="flex-col items-start justify-center gap-2">
-          <label className="flex cursor-pointer items-center gap-2.5 text-[12.5px] font-bold text-navy/70">
-            <input
-              type="checkbox"
-              checked={pregnant}
-              onChange={(e) => setPregnant(e.target.checked)}
-              className="h-4 w-4 accent-[#0072DA]"
-            />
-            Someone is expecting
-          </label>
-          <label className="flex cursor-pointer items-center gap-2.5 text-[12.5px] font-bold text-navy/70">
-            <input
-              type="checkbox"
-              checked={senior}
-              onChange={(e) => setSenior(e.target.checked)}
-              className="h-4 w-4 accent-[#0072DA]"
-            />
-            Someone is 65 or older
-          </label>
-        </Cell>
-      )}
-    </div>
-  );
 }
 
 export function Hint({ text, pulse }: { text: string; pulse?: boolean }) {
@@ -1330,14 +1147,13 @@ function CapsuleStepper({
  * The frames the hero cycles through, in order. A slow crossfade, never a
  * slideshow with chrome: the photo is scenery, not a gallery to operate.
  */
+export const TICKET_SHOT =
+  "https://t3.ftcdn.net/jpg/10/35/88/50/360_F_1035885083_P5DoiniSyFhg9aGvbgxN2xFJbTWdVHFs.jpg";
+
 export const HERO_SHOTS = [
   "https://loved-serenity-e0ed39558b.media.strapiapp.com/Victoria_Whale_Watching_W_4d01395347.webp",
   "https://i.redd.it/sunset-whale-watching-v0-h1y8a1zlp6if1.jpg?width=3050&format=pjpg&auto=webp&s=cf3135cd1cfc81e0655625c353849483ecfb0de9",
 ];
-
-/** The one photograph on the ticket. Still, so the stub stays paperwork. */
-export const TICKET_SHOT =
-  "https://t3.ftcdn.net/jpg/10/35/88/50/360_F_1035885083_P5DoiniSyFhg9aGvbgxN2xFJbTWdVHFs.jpg";
 
 /**
  * The stack of crossfading photographs behind a cover. Absolutely positioned,
@@ -1368,45 +1184,44 @@ export function CoverSlides({
 }
 
 /**
- * The ticket, boarding-pass anatomy: one still photograph across the head
- * with the day and the party printed on it as two fields that open the
- * picker on tap, the day as a three-stop mini-itinerary underneath (dashes
- * until the plan lands), then a perforation, then the money in the stub.
- * The hero runs the slideshow; the ticket keeps a single frame and holds
- * still, so the rail stays calm next to it. The mobile dock is untouched.
+ * The ticket, boarding-pass anatomy: one photograph across the head with the
+ * day and the party printed on it as fields that open the picker on tap, the
+ * day as a mini-itinerary underneath (dashes until the plan lands), then a
+ * perforation, then the money in the stub.
+ *
+ * It knows nothing about whales or ferries: the flow that owns the product
+ * hands it rows, ledger lines and a total, so every tour on the site wears
+ * the same ticket.
  */
 export function SideTicket({
-  image = TICKET_SHOT,
-  cities,
-  pax,
-  tour,
-  outbound,
-  ret,
-  breakdown,
-  flexCents,
+  image,
   plan,
+  rows,
+  lines = [],
+  totalCents,
+  emptyText,
+  footnote,
+  totalNote = "for everyone, all in",
+  bookLabel = "Book this day",
 }: {
   /** The one photograph across the head of the ticket. */
-  image?: string;
-  /** City names for the two flight stops, e.g. { out: "Victoria", home: "Vancouver" }. */
-  cities: { out: string; home: string };
-  pax: Pax;
-  tour: TourSlot | null;
-  outbound: FlightLeg | null;
-  ret: FlightLeg | null;
-  breakdown: PriceBreakdown | null;
-  /** 0 when the add-on is off, the flat add-on in cents when it is on. */
-  flexCents: number;
-  /** The day and party control, printed at the head of the ticket. */
+  image: string;
+  /** The day and party control, printed on the photograph. */
   plan: React.ReactNode;
+  /** The stops of the day, in order. A null time prints as dashes. */
+  rows: { time: string | null; label: string }[];
+  /** The arithmetic above the total. Empty when there is nothing to explain. */
+  lines?: { label: string; value: string; accent?: boolean }[];
+  /** The figure in the stub, or null while the day is unfinished. */
+  totalCents: number | null;
+  /** What the stub says before there is a price. */
+  emptyText: string;
+  /** A quiet line under the button, when the day needs one. */
+  footnote?: string | null;
+  totalNote?: string;
+  bookLabel?: string;
 }) {
-  const complete = breakdown !== null && tour !== null && outbound !== null && ret !== null;
-  const pct = packageDiscountPct();
   const bookHref = process.env.NEXT_PUBLIC_BOOK_URL;
-
-  const fullCents = complete ? breakdown.totalAllInCents + flexCents : null;
-  const deal = fullCents !== null ? applyPackageDeal(fullCents) : null;
-  const itemised = flexCents > 0 || (deal?.saveCents ?? 0) > 0;
 
   return (
     <aside className="lg:sticky lg:top-[76px]">
@@ -1424,9 +1239,9 @@ export function SideTicket({
           <div className="p-5 pb-4">
             {/* The day as a mini-itinerary, quiet type, dashes until it lands. */}
             <div className="grid grid-cols-[64px_1fr] gap-x-2.5 gap-y-1.5 text-[12.5px]">
-              <ItinRow time={outbound ? fmt12(outbound.dep) : null} label={`Fly to ${cities.out}`} />
-              <ItinRow time={tour ? fmt12(tour.start) : null} label="Whale watching" />
-              <ItinRow time={ret ? fmt12(ret.dep) : null} label={`Fly to ${cities.home}`} />
+              {rows.map((r) => (
+                <ItinRow key={r.label} time={r.time} label={r.label} />
+              ))}
             </div>
           </div>
 
@@ -1437,51 +1252,43 @@ export function SideTicket({
           </div>
 
           <div className="p-5 pt-3.5">
-            {deal !== null && fullCents !== null ? (
+            {totalCents !== null ? (
               <>
-                {/* The money reads as arithmetic: the day, then anything added or
-                    taken off, then what you pay. With nothing to adjust the lines
-                    would just restate the total, so they only appear when they
-                    have something to say. */}
-                {itemised && (
+                {/* The money reads as arithmetic: the day, then anything added
+                    or taken off, then what you pay. With nothing to adjust the
+                    lines would just restate the total, so they only appear when
+                    they have something to say. */}
+                {lines.length > 0 && (
                   <div className="grid gap-0.5 text-[12px] font-bold">
-                    <MoneyLine label="The day" value={ledger(fullCents - flexCents)} />
-                    {flexCents > 0 && <MoneyLine label="Flexible" value={ledger(flexCents)} />}
-                    {deal.saveCents > 0 && (
-                      <MoneyLine
-                        label={`Package deal, ${pct}% off`}
-                        value={`-${ledger(deal.saveCents)}`}
-                        accent
-                      />
-                    )}
+                    {lines.map((l) => (
+                      <MoneyLine key={l.label} label={l.label} value={l.value} accent={l.accent} />
+                    ))}
                   </div>
                 )}
                 <p
                   className={`font-display text-[27px] font-black tabular-nums leading-none ${
-                    itemised ? "mt-2 border-t-2 border-dashed border-pale pt-2.5" : "mt-0.5"
+                    lines.length > 0
+                      ? "mt-2 border-t-2 border-dashed border-pale pt-2.5"
+                      : "mt-0.5"
                   }`}
                 >
-                  {fmtMoney(deal.totalCents)}
+                  {fmtMoney(totalCents)}
                 </p>
-                <p className="mt-1 text-[11px] font-bold text-navy/50">for everyone, all in</p>
+                <p className="mt-1 text-[11px] font-bold text-navy/50">{totalNote}</p>
                 {bookHref && (
                   <a
                     href={bookHref}
                     className="mt-3 block rounded-2xl bg-smart py-3 text-center text-sm font-extrabold text-navy no-underline transition-[filter] hover:brightness-105"
                   >
-                    Book this day
+                    {bookLabel}
                   </a>
                 )}
-                {pax.infants > 0 && (
-                  <p className="mt-2 text-[11px] font-semibold text-navy/50">
-                    Infants fly free on a lap. The boat&#x27;s infant fare is in the total.
-                  </p>
+                {footnote && (
+                  <p className="mt-2 text-[11px] font-semibold text-navy/50">{footnote}</p>
                 )}
               </>
             ) : (
-              <p className="text-[12.5px] font-bold leading-relaxed text-navy/50">
-                Pick a day and a plan and the price lands here, package deal included.
-              </p>
+              <p className="text-[12.5px] font-bold leading-relaxed text-navy/50">{emptyText}</p>
             )}
           </div>
         </div>
@@ -1961,6 +1768,7 @@ export function DayPlans({
  * all follow the direction picked.
  */
 export function FlightsFlow({
+  image,
   variants,
   ground,
   initialDate,
@@ -1968,8 +1776,10 @@ export function FlightsFlow({
   initialChildren,
   initialInfants,
 }: {
+  /** The tour's cover, which the ticket wears across its head. */
+  image: string;
   variants: FlightVariant[];
-  /** What the tour includes beyond the flying, said plainly on the dock. */
+  /** What the tour includes beyond the flying, said plainly on the ticket. */
   ground: string[];
   initialDate?: string;
   initialAdults?: number;
@@ -2023,7 +1833,7 @@ export function FlightsFlow({
 
   const [date, setDate] = useState<string | null>(startDate);
   const [legs, setLegs] = useState<{ out: FlightLeg[]; back: FlightLeg[] } | null>(null);
-  const [legsLoading, setLegsLoading] = useState(false);
+  const [legsLoading, setLegsLoading] = useState<boolean>(Boolean(initialDate));
   const [legsError, setLegsError] = useState<string | null>(null);
   const [outId, setOutId] = useState<string | null>(null);
   const [backId, setBackId] = useState<string | null>(null);
@@ -2091,18 +1901,52 @@ export function FlightsFlow({
     (!needOut || outCents !== null) && (!needBack || backCents !== null) && date !== null;
   const totalCents = complete ? (outCents ?? 0) + (backCents ?? 0) : null;
 
-  return (
-    <section id="plan" className="relative">
-      <div className="relative mx-auto max-w-5xl px-5 pb-16 pt-14 sm:px-8">
-        <Thread />
+  const outCity = out ? AIRPORT_CITY[out.to] ?? out.to : null;
+  const backCity = back ? AIRPORT_CITY[back.to] ?? back.to : null;
 
-        <Station
-          n={1}
-          title="Pick your day."
-          note="Every price is for your whole group."
-        >
+  const rows = [
+    ...(needOut ? [{ time: outLeg ? fmt12(outLeg.dep) : null, label: `Fly to ${outCity}` }] : []),
+    ...(needBack ? [{ time: backLeg ? fmt12(backLeg.dep) : null, label: `Fly to ${backCity}` }] : []),
+  ];
+
+  const lines: { label: string; value: string; accent?: boolean }[] = [];
+  if (totalCents !== null && needOut && needBack && outCents !== null && backCents !== null) {
+    lines.push({ label: `Fly to ${outCity}`, value: ledger(outCents) });
+    lines.push({ label: `Fly to ${backCity}`, value: ledger(backCents) });
+  }
+
+  const capsule = (
+    <DayCapsule
+      variant="fields"
+      align="right"
+      date={date}
+      onDate={(d) => setDate(d)}
+      ym={ym}
+      onMonthChange={(y, m) => setYm({ y, m })}
+      calDays={calDays}
+      calLoading={calLoading}
+      calError={calError}
+      today={today}
+      adults={adults}
+      setAdults={setAdults}
+      children={children}
+      setChildren={setChildren}
+      infants={infants}
+      setInfants={setInfants}
+      pregnant={pregnant}
+      setPregnant={setPregnant}
+      senior={senior}
+      setSenior={setSenior}
+      withBoatRules={false}
+    />
+  );
+
+  return (
+    <section id="plan" className="mx-auto max-w-6xl px-5 pt-12 sm:px-8">
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_284px]">
+        <div className="min-w-0">
           {variants.length > 1 && (
-            <div className="mb-4 inline-flex flex-wrap gap-1.5 rounded-full border border-pale bg-white p-1.5 shadow-lift">
+            <div className="mb-5 inline-flex flex-wrap gap-1.5 rounded-full border border-pale bg-white p-1.5 shadow-lift">
               {variants.map((v, i) => (
                 <button
                   key={v.label}
@@ -2110,9 +1954,7 @@ export function FlightsFlow({
                   onClick={() => switchVariant(i)}
                   className={[
                     "rounded-full px-5 py-2.5 text-[13px] font-extrabold transition-colors",
-                    i === variantIdx
-                      ? "bg-navy text-white"
-                      : "text-navy/60 hover:text-cobalt",
+                    i === variantIdx ? "bg-navy text-white" : "text-navy/60 hover:text-cobalt",
                   ].join(" ")}
                 >
                   {v.label}
@@ -2120,115 +1962,131 @@ export function FlightsFlow({
               ))}
             </div>
           )}
-          <div className="rounded-3xl border border-pale bg-white p-6 shadow-ticket sm:p-7">
-            {calError && <ErrorNote text={calError} />}
-            <Calendar
-              year={ym.y}
-              month={ym.m}
-              days={calDays}
-              loading={calLoading && Object.keys(calDays).length === 0}
-              value={date}
-              minDate={today}
-              onSelect={(d) => setDate(d)}
-              onMonthChange={(y, m) => setYm({ y, m })}
-            />
-          </div>
-        </Station>
 
-        <Station n={2} title="Who's coming.">
-          <TravellersRibbon
-            adults={adults}
-            setAdults={setAdults}
-            children={children}
-            setChildren={setChildren}
-            infants={infants}
-            setInfants={setInfants}
-            pregnant={pregnant}
-            setPregnant={setPregnant}
-            senior={senior}
-            setSenior={setSenior}
-            withBoatRules={false}
-          />
-        </Station>
+          <h2 className="text-3xl">{needOut && needBack ? "Build your day." : "Pick your flight."}</h2>
+          <p className="mt-1 text-[15px] text-navy/60">Every price is for your whole group.</p>
 
-        <Station
-          n={3}
-          title={needOut && needBack ? "Pick your flights." : "Pick your flight."}
-          last
-        >
-          {legsError && <ErrorNote text={legsError} />}
-          {!date ? (
-            <Hint text="Pick a day first and the departures will show up here." />
-          ) : legsLoading ? (
-            <Hint text="Checking the flight board" pulse />
-          ) : (
-            <div className="space-y-4">
-              {needOut && (
-                <LegPanel
-                  title={out ? `Fly to ${AIRPORT_CITY[out.to] ?? out.to}` : "Fly out"}
-                  sub={out ? `${out.from} to ${out.to}` : ""}
-                  legs={legs?.out ?? []}
-                  pax={pax}
-                  selected={outId}
-                  onPick={setOutId}
-                />
-              )}
-              {needBack && (
-                <LegPanel
-                  title={back ? `Fly to ${AIRPORT_CITY[back.to] ?? back.to}` : "Fly back"}
-                  sub={back ? `${back.from} to ${back.to}` : ""}
-                  legs={legs?.back ?? []}
-                  pax={pax}
-                  selected={backId}
-                  onPick={setBackId}
-                />
-              )}
-            </div>
-          )}
-        </Station>
-      </div>
-
-      <div className="fixed inset-x-0 bottom-0 z-50 sm:px-5">
-        <div className="mx-auto max-w-5xl overflow-hidden rounded-t-3xl bg-navy text-white shadow-[0_-20px_60px_-20px_rgba(0,45,98,0.55)]">
-          <div className="flex items-center gap-4 px-6 py-4">
-            <span className="min-w-0">
-              <span className="block truncate font-display text-[15px] font-extrabold">
-                {date
-                  ? new Date(`${date}T12:00:00`).toLocaleDateString("en-CA", {
-                      weekday: "short",
-                      month: "short",
-                      day: "numeric",
-                    })
-                  : "Pick a day"}
-              </span>
-              <span className="block truncate text-[12.5px] font-bold text-pale">
-                {outLeg ? `Out ${fmt12(outLeg.dep)}` : needOut ? "Outbound not picked" : ""}
-                {needOut && needBack ? ", " : ""}
-                {backLeg ? `home ${fmt12(backLeg.dep)}` : needBack ? "return not picked" : ""}
-              </span>
-            </span>
-            <span className="flex-1" />
-            {totalCents !== null ? (
-              <span className="font-display text-2xl font-black tabular-nums text-smart">
-                {fmtMoney(totalCents)}
-              </span>
+          <div className="mt-4 rounded-3xl border border-pale bg-white p-6 shadow-ticket sm:p-7">
+            {legsError && <ErrorNote text={legsError} />}
+            {!date ? (
+              <Hint text="Pick a day on the ticket and the departures show up here." />
+            ) : legsLoading ? (
+              <Hint text="Checking the flight board" pulse />
             ) : (
-              <span className="text-[13px] font-bold text-sky">
-                {date
-                  ? needOut && needBack
-                    ? "Pick your flights to price your day"
-                    : "Pick your flight to price your day"
-                  : "Your ticket fills in here"}
-              </span>
+              /* The same pier as the whale day: a dashed line, a bollard at
+                 every stop, and the time between them said out loud. */
+              <div className="relative pl-8">
+                <span
+                  aria-hidden="true"
+                  className="absolute bottom-5 left-[11px] top-2 w-[3px] rounded-full"
+                  style={{
+                    background:
+                      "repeating-linear-gradient(180deg,var(--pale) 0 8px,transparent 8px 15px)",
+                  }}
+                />
+
+                {needOut && (
+                  <Stop
+                    title={`Fly to ${outCity}`}
+                    time={
+                      outLeg ? `${fmt12(outLeg.dep)} to ${fmt12(outLeg.arr)}` : "Pick a flight"
+                    }
+                    done={outLeg !== null}
+                    last={!needBack}
+                  >
+                    <FlightChips
+                      legs={legs?.out ?? []}
+                      pax={pax}
+                      selected={outId}
+                      onPick={setOutId}
+                      emptyText="No flight on this leg can carry your group that day. Another date usually does it."
+                    />
+                  </Stop>
+                )}
+
+                {needOut && needBack && outLeg && backLeg && (
+                  <Gap
+                    text={`${fmtWait(minutesBetween(outLeg.arr, backLeg.dep))} in ${outCity}`}
+                  />
+                )}
+
+                {needBack && (
+                  <Stop
+                    title={`Fly to ${backCity}`}
+                    time={
+                      backLeg ? `${fmt12(backLeg.dep)} to ${fmt12(backLeg.arr)}` : "Pick a flight"
+                    }
+                    done={backLeg !== null}
+                    last
+                  >
+                    <FlightChips
+                      legs={legs?.back ?? []}
+                      pax={pax}
+                      selected={backId}
+                      onPick={setBackId}
+                      emptyText="No flight on this leg can carry your group that day. Another date usually does it."
+                    />
+                  </Stop>
+                )}
+              </div>
             )}
           </div>
-          <div className="border-t border-dashed border-sky/40 px-6 py-3">
-            {ground.map((g) => (
-              <p key={g} className="py-0.5 text-[12px] font-semibold text-sky">
-                {g}
-              </p>
-            ))}
-          </div>
+
+          {ground.length > 0 && (
+            <div className="mt-4 rounded-3xl border border-pale bg-white p-5">
+              {ground.map((g) => (
+                <p key={g} className="py-0.5 text-[13px] font-semibold text-navy/65">
+                  {g}
+                </p>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="order-first lg:order-1 lg:self-stretch">
+          <SideTicket
+            image={image}
+            rows={rows}
+            lines={lines}
+            totalCents={totalCents}
+            emptyText={
+              needOut && needBack
+                ? "Pick a day and your flights and the price lands here."
+                : "Pick a day and your flight and the price lands here."
+            }
+            plan={capsule}
+          />
+        </div>
+      </div>
+
+      {/* On phones the ticket scrolls away with the page, so the total keeps a
+          permanent bar at the bottom, exactly as the whale day does. */}
+      <div className="fixed inset-x-0 bottom-0 z-50 px-0 sm:px-5 lg:hidden">
+        <div className="mx-auto flex max-w-5xl items-center gap-4 rounded-t-3xl bg-navy px-6 py-4 text-white shadow-[0_-20px_60px_-20px_rgba(0,45,98,0.55)]">
+          <span className="min-w-0">
+            <span className="block truncate font-display text-[15px] font-extrabold">
+              {date
+                ? new Date(`${date}T12:00:00`).toLocaleDateString("en-CA", {
+                    weekday: "short",
+                    month: "short",
+                    day: "numeric",
+                  })
+                : "Pick a day"}
+            </span>
+            <span className="block truncate text-[12.5px] font-bold text-pale">
+              {rows
+                .map((r) => `${r.label}${r.time ? ` ${r.time}` : " not picked"}`)
+                .join(", ")}
+            </span>
+          </span>
+          <span className="flex-1" />
+          {totalCents !== null ? (
+            <span className="font-display text-2xl font-black tabular-nums text-smart">
+              {fmtMoney(totalCents)}
+            </span>
+          ) : (
+            <span className="text-[13px] font-bold text-sky">Your ticket fills in here</span>
+          )}
         </div>
       </div>
     </section>
@@ -2241,59 +2099,6 @@ const AIRPORT_CITY: Record<string, string> = {
   GLK: "Whistler",
   GNG: "Salt Spring",
 };
-
-function LegPanel({
-  title,
-  sub,
-  legs,
-  pax,
-  selected,
-  onPick,
-}: {
-  title: string;
-  sub: string;
-  legs: FlightLeg[];
-  pax: Pax;
-  selected: string | null;
-  onPick: (id: string) => void;
-}) {
-  return (
-    <div className="rounded-3xl border border-pale bg-white p-5 shadow-ticket sm:p-6">
-      <div className="mb-3 flex items-baseline gap-3">
-        <p className="font-display text-lg font-extrabold">{title}</p>
-        <p className="text-xs font-bold text-navy/50">{sub}</p>
-      </div>
-      {legs.length === 0 ? (
-        <p className="text-sm text-navy/55">
-          No flight on this leg can carry your group that day. Another date usually does it.
-        </p>
-      ) : (
-        <div className="flex flex-wrap gap-2">
-          {legs.map((f) => {
-            const cents = flightPriceCents(f, pax);
-            const open = seatsOpenFor(f, pax);
-            return (
-              <button
-                key={f.id}
-                type="button"
-                className="chip flex items-baseline gap-1.5 py-1.5 text-xs"
-                data-active={selected === f.id}
-                onClick={() => onPick(f.id)}
-                title={`Lands ${fmt12(f.arr)}`}
-              >
-                <span className="tabular-nums">{fmt12(f.dep)}</span>
-                {cents !== null && (
-                  <span className="font-bold tabular-nums text-cobalt">{fmtMoney(cents)}</span>
-                )}
-                {open <= 4 && <span className="font-bold text-ember">{open} left</span>}
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
 
 /* ===================== BookingFlow.tsx ===================== */
 
@@ -2476,6 +2281,27 @@ export function BookingFlow({
 
   const flexPrice = flexAddonCents();
   const flexCents = flexOn ? flexPrice : 0;
+
+  /* The ticket takes finished numbers, not the product's parts: the whale day
+     is the only tour with a package deal and a flexibility add-on, so the
+     arithmetic that explains them is assembled here. */
+  const ticketFull =
+    breakdown !== null && tour !== null && outbound !== null && ret !== null
+      ? breakdown.totalAllInCents + flexCents
+      : null;
+  const ticketDeal = ticketFull !== null ? applyPackageDeal(ticketFull) : null;
+  const ticketTotal = ticketDeal?.totalCents ?? null;
+  const ticketLines: { label: string; value: string; accent?: boolean }[] = [];
+  if (ticketFull !== null && ticketDeal !== null && (flexCents > 0 || ticketDeal.saveCents > 0)) {
+    ticketLines.push({ label: "The day", value: ledger(ticketFull - flexCents) });
+    if (flexCents > 0) ticketLines.push({ label: "Flexible", value: ledger(flexCents) });
+    if (ticketDeal.saveCents > 0)
+      ticketLines.push({
+        label: `Package deal, ${packageDiscountPct()}% off`,
+        value: `-${ledger(ticketDeal.saveCents)}`,
+        accent: true,
+      });
+  }
 
   const selectedKey =
     tourPk && outboundId && returnId ? `${tourPk}|${outboundId}|${returnId}` : null;
@@ -2683,13 +2509,20 @@ export function BookingFlow({
             one would be exactly as tall as the ticket, so nothing would stick. */}
         <div className="order-first lg:order-1 lg:self-stretch">
           <SideTicket
-            cities={{ out: "Victoria", home: "Vancouver" }}
-            pax={pax}
-            tour={tour}
-            outbound={outbound}
-            ret={ret}
-            breakdown={breakdown}
-            flexCents={flexCents}
+            image={TICKET_SHOT}
+            rows={[
+              { time: outbound ? fmt12(outbound.dep) : null, label: "Fly to Victoria" },
+              { time: tour ? fmt12(tour.start) : null, label: "Whale watching" },
+              { time: ret ? fmt12(ret.dep) : null, label: "Fly to Vancouver" },
+            ]}
+            lines={ticketLines}
+            totalCents={ticketTotal}
+            emptyText="Pick a day and a plan and the price lands here, package deal included."
+            footnote={
+              pax.infants > 0
+                ? "Infants fly free on a lap. The boat's infant fare is in the total."
+                : null
+            }
             plan={
               <DayCapsule
                 variant="fields"

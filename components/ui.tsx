@@ -1770,21 +1770,30 @@ export function DayPlans({
 
   return (
     <div>
-      {/* The pager. On phones a thumb does this job, so it only shows where
-          there is a pointer to click with. */}
-      <div className="mb-1 hidden justify-end gap-2 sm:flex">
-        {([-1, 1] as const).map((dir) => (
-          <button
-            key={dir}
-            type="button"
-            aria-label={dir === -1 ? "Previous days" : "More days"}
-            disabled={dir === -1 ? !offStart : atEnd}
-            onClick={() => flip(dir)}
-            className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-pale bg-white text-navy transition-colors hover:border-cobalt disabled:cursor-default disabled:opacity-35 disabled:hover:border-pale"
-          >
-            <IconChevronRight className={`h-3.5 w-3.5 ${dir === -1 ? "rotate-180" : ""}`} />
-          </button>
-        ))}
+      {/* One line, two jobs: the count of ways on the left, the pager on the
+          right. Sharing the row keeps the cards close to the heading instead
+          of a floor below it. On phones a thumb does the paging, so only the
+          words remain. */}
+      <div className="mb-1 flex items-end justify-between gap-4">
+        <p className="text-[15px] text-navy/60">
+          {["One way", "Two ways", "Three ways", "Four ways"][plans.length - 1] ??
+            `${plans.length} ways`}{" "}
+          to run it, priced for your whole group.
+        </p>
+        <div className="hidden shrink-0 gap-2 sm:flex">
+          {([-1, 1] as const).map((dir) => (
+            <button
+              key={dir}
+              type="button"
+              aria-label={dir === -1 ? "Previous days" : "More days"}
+              disabled={dir === -1 ? !offStart : atEnd}
+              onClick={() => flip(dir)}
+              className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-pale bg-white text-navy transition-colors hover:border-cobalt disabled:cursor-default disabled:opacity-35 disabled:hover:border-pale"
+            >
+              <IconChevronRight className={`h-3.5 w-3.5 ${dir === -1 ? "rotate-180" : ""}`} />
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Two cards whole in the frame, the third melting into the mask: the
@@ -1823,11 +1832,13 @@ export function DayPlans({
                   Lowest
                 </span>
               )}
-              <p className="font-display text-[22px] font-black tabular-nums leading-none tracking-tight">
+              <p className="font-display text-[27px] font-black tabular-nums leading-none tracking-tight">
                 {fmtMoney(plan.totalCents)}
-                <span className="ml-1.5 text-[10px] font-extrabold text-navy/50">all in</span>
+                <span className="ml-1.5 text-[10.5px] font-extrabold tracking-normal text-navy/50">
+                  all in
+                </span>
               </p>
-              <p className="mt-1.5 font-display text-[15.5px] font-extrabold">{plan.title}</p>
+              <p className="mt-2 font-display text-[18px] font-extrabold">{plan.title}</p>
 
               {/* The day itself, hour by hour, in the same dress as the story
                   section further down: the dashed thread, cobalt bollards, the
@@ -2578,14 +2589,7 @@ export function BookingFlow({
           )}
 
           <h2 className="mt-10 text-3xl">Shape your day.</h2>
-          {plans.length > 0 && !custom && (
-            <p className="mt-1 text-[15px] text-navy/60">
-              {["One way", "Two ways", "Three ways", "Four ways"][plans.length - 1] ??
-                `${plans.length} ways`}{" "}
-              to run it, priced for your whole group.
-            </p>
-          )}
-          <div className="mt-4">
+          <div className="mt-3">
             {combosError && <ErrorNote text={combosError} />}
             {!date ? (
               <Hint text="Pick a day on the ticket and the times show up here." />
@@ -2617,9 +2621,6 @@ export function BookingFlow({
               </div>
             ) : (
               <>
-                <p className="mb-3 text-[12.5px] font-extrabold text-cobalt sm:hidden">
-                  Swipe through the days &rsaquo;
-                </p>
                 <DayPlans plans={plans} selected={selectedKey} onPick={takePlan} />
                 <button
                   type="button"

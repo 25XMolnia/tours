@@ -104,7 +104,7 @@
      fades; once scrolled, both do; at the end the right edge turns honest and
      sharp again and only the left one melts. */
   .plans-fade {
-    --fade: 120px;
+    --fade: 64px;
     scrollbar-width: none;
     -webkit-mask-image: linear-gradient(
       90deg,
@@ -121,6 +121,11 @@
   }
   .plans-fade::-webkit-scrollbar {
     display: none;
+  }
+  @media (max-width: 640px) {
+    .plans-fade {
+      --fade: 44px;
+    }
   }
   .plans-fade.off-start {
     -webkit-mask-image: linear-gradient(

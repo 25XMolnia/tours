@@ -1717,42 +1717,179 @@ export function DayPlans({
   selected: string | null;
   onPick: (plan: Plan) => void;
 }) {
+  const railRef = useRef<HTMLDivElement>(null);
+  /* Which edges of the strip have more behind them: the mask melts a card
+     only where scrolling can reveal it, so the fade never lies. */
+  const [offStart, setOffStart] = useState(false);
+  const [atEnd, setAtEnd] = useState(false);
+
+  const sync = useCallback(() => {
+    const el = railRef.current;
+    if (!el) return;
+    setOffStart(el.scrollLeft > 10);
+    setAtEnd(el.scrollLeft > el.scrollWidth - el.clientWidth - 10);
+  }, []);
+
+  useEffect(() => {
+    sync();
+    window.addEventListener("resize", sync);
+    return () => window.removeEventListener("resize", sync);
+  }, [sync, plans.length]);
+
+  const flip = (dir: -1 | 1) => {
+    const el = railRef.current;
+    if (!el) return;
+    el.scrollBy({ left: (el.clientWidth - 60) * dir, behavior: "smooth" });
+  };
+
   return (
-    <div className="rail -mx-1 flex snap-x gap-4 overflow-x-auto px-1 pb-4 pt-3">
-      {plans.map((plan, i) => {
-        const active = selected === key(plan);
-        return (
+    <div>
+      {/* The pager. On phones a thumb does this job, so it only shows where
+          there is a pointer to click with. */}
+      <div className="mb-1 hidden justify-end gap-2 sm:flex">
+        {([-1, 1] as const).map((dir) => (
           <button
-            key={key(plan)}
+            key={dir}
             type="button"
-            onClick={() => onPick(plan)}
-            data-active={active}
-            className={[
-              "relative w-[280px] shrink-0 snap-start rounded-3xl border-2 p-5 text-left transition-all sm:w-[300px]",
-              active
-                ? "-translate-y-1 border-cobalt bg-white shadow-ticket"
-                : "border-pale bg-white shadow-lift hover:-translate-y-1 hover:border-sky",
-            ].join(" ")}
+            aria-label={dir === -1 ? "Previous days" : "More days"}
+            disabled={dir === -1 ? !offStart : atEnd}
+            onClick={() => flip(dir)}
+            className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-pale bg-white text-navy transition-colors hover:border-cobalt disabled:cursor-default disabled:opacity-35 disabled:hover:border-pale"
           >
-            {i === 0 && (
-              <span className="absolute -top-3 left-4 rounded-full bg-smart px-3 py-1 text-[11px] font-black text-navy shadow-lift">
-                Lowest
-              </span>
-            )}
-            <p className="font-display text-[26px] font-black tabular-nums leading-none tracking-tight">
-              {fmtMoney(plan.totalCents)}
-              <span className="ml-1.5 text-xs font-extrabold text-navy/50">all in</span>
-            </p>
-            <p className="mt-2.5 font-display text-lg font-extrabold">{plan.title}</p>
-            <p className="mt-1 text-[13.5px] leading-snug text-navy/65">{plan.why}</p>
-            <p className="mt-3.5 border-t-2 border-dashed border-pale pt-3 text-xs font-bold tabular-nums text-navy/55">
-              {fmt12(plan.dep)} out, boat {fmt12(plan.tour.start)}, home {fmt12(plan.home)}
-            </p>
+            <IconChevronRight className={`h-3.5 w-3.5 ${dir === -1 ? "rotate-180" : ""}`} />
           </button>
-        );
-      })}
+        ))}
+      </div>
+
+      {/* Two cards whole in the frame, the third melting into the mask: the
+          card is a third wider than the old rail's, and the whole day rides
+          inside it, so nothing on it repeats the ticket. */}
+      <div
+        ref={railRef}
+        onScroll={sync}
+        className={[
+          "plans-fade -mx-1 flex snap-x snap-mandatory items-stretch gap-3.5 overflow-x-auto px-1 pb-4 pt-3",
+          offStart ? "off-start" : "",
+          atEnd ? "at-end" : "",
+        ].join(" ")}
+      >
+        {plans.map((plan, i) => {
+          const active = selected === key(plan);
+          const out = plan.tour.outbound.find((l) => l.id === plan.outboundId);
+          const ret = plan.tour.returns.find((l) => l.id === plan.returnId);
+          const city = (code: string) => AIRPORT_CITY[code] ?? code;
+          return (
+            <button
+              key={key(plan)}
+              type="button"
+              onClick={() => onPick(plan)}
+              data-active={active}
+              className={[
+                "relative min-w-[224px] shrink-0 snap-start rounded-3xl border-2 p-4 text-left transition-all",
+                "flex-[0_0_calc((100%-58px)/2.65)]",
+                active
+                  ? "-translate-y-1 border-cobalt bg-white shadow-ticket"
+                  : "border-pale bg-white shadow-lift hover:-translate-y-1 hover:border-sky",
+              ].join(" ")}
+            >
+              {i === 0 && (
+                <span className="absolute -top-3 left-3.5 rounded-full bg-smart px-3 py-1 text-[11px] font-black text-navy shadow-lift">
+                  Lowest
+                </span>
+              )}
+              <p className="font-display text-[22px] font-black tabular-nums leading-none tracking-tight">
+                {fmtMoney(plan.totalCents)}
+                <span className="ml-1.5 text-[10px] font-extrabold text-navy/50">all in</span>
+              </p>
+              <p className="mt-1.5 font-display text-[15.5px] font-extrabold">{plan.title}</p>
+
+              {/* The day itself, hour by hour, in the same dress as the story
+                  section further down: the dashed thread, cobalt bollards, the
+                  boat's in yellow, home's left hollow. Every time is real. */}
+              <div className="relative mt-3 border-t-2 border-dashed border-pale pl-6 pt-3">
+                <span
+                  aria-hidden="true"
+                  className="absolute bottom-2 left-[6px] top-5 w-[3px] rounded-full"
+                  style={{
+                    background:
+                      "repeating-linear-gradient(180deg,var(--pale) 0 6px,transparent 6px 11px)",
+                  }}
+                />
+                {out && <PlanStop time={out.dep} label={`Fly out of ${city(out.from)}`} />}
+                {out && <PlanStop time={out.arr} label={`Land in ${city(out.to)}`} />}
+                <PlanGap text={`${fmtWait(plan.before)} ashore`} />
+                <PlanStop
+                  time={plan.tour.start}
+                  label={`Whales, ${fmtWait(minutesBetween(plan.tour.start, plan.tour.end))} out`}
+                  boat
+                />
+                <PlanStop time={plan.tour.end} label="Back at the dock" />
+                <PlanGap text={`${fmtWait(plan.after)} ashore`} />
+                {ret && <PlanStop time={ret.dep} label="Fly back" />}
+                <PlanStop
+                  time={plan.home}
+                  label={`Home in ${ret ? city(ret.to) : "Vancouver"}`}
+                  home
+                />
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Two pages, two dots. */}
+      <div className="flex justify-center gap-1.5" aria-hidden="true">
+        <span
+          className={`h-[7px] w-[7px] rounded-full transition-colors ${
+            atEnd ? "bg-pale" : "bg-cobalt"
+          }`}
+        />
+        <span
+          className={`h-[7px] w-[7px] rounded-full transition-colors ${
+            atEnd ? "bg-cobalt" : "bg-pale"
+          }`}
+        />
+      </div>
     </div>
   );
+}
+
+/** One hour of the plan's day: the bollard, the time, what happens. */
+function PlanStop({
+  time,
+  label,
+  boat,
+  home,
+}: {
+  time: string;
+  label: string;
+  /** The boat is the fixed point of the day, so its bollard is the yellow one. */
+  boat?: boolean;
+  /** The last stop is the day letting go, so its bollard stays hollow. */
+  home?: boolean;
+}) {
+  return (
+    <div className="relative py-[2px]">
+      <span
+        aria-hidden="true"
+        className={[
+          "absolute -left-6 top-[4px] h-3.5 w-3.5 rounded-full border-[3px] bg-white",
+          boat ? "border-navy bg-smart" : home ? "border-pale" : "border-cobalt",
+        ].join(" ")}
+      />
+      <span className="inline-block min-w-[58px] pt-px align-top font-display text-[11.5px] font-extrabold tabular-nums text-cobalt">
+        {fmt12(time)}
+      </span>
+      <span className="inline-block w-[calc(100%-62px)] align-top text-[12px] font-extrabold leading-tight">
+        {label}
+      </span>
+    </div>
+  );
+}
+
+/** The quiet stretch between two stops, said in grey. */
+function PlanGap({ text }: { text: string }) {
+  return <p className="my-px pl-[58px] text-[10px] font-extrabold text-navy/45">{text}</p>;
 }
 
 /* ===================== FlightsFlow.tsx ===================== */

@@ -94,32 +94,6 @@ export default function TourPage({
               {...initial}
             />
           </div>
-
-          {/* The story lives after the booking: a guest arriving from the
-              catalog card is already warm, so the machine comes first. */}
-          <section className="pt-14">
-            <h2 className="mb-5 text-3xl">The day, hour by hour.</h2>
-            <div className="rail flex snap-x gap-4 overflow-x-auto pb-4">
-              {tour.hours.map((h) => (
-                <div
-                  key={h.time}
-                  className="w-[236px] shrink-0 snap-start rounded-3xl bg-white p-5 shadow-lift"
-                >
-                  <p className="text-[13px] font-black tabular-nums text-cobalt">{h.time}</p>
-                  <p className="mt-1.5 font-display text-[16.5px] font-extrabold leading-tight">
-                    {h.title}
-                  </p>
-                  <p className="mt-1.5 text-[13px] leading-relaxed text-navy/60">{h.body}</p>
-                </div>
-              ))}
-            </div>
-            {tour.hoursNote && (
-              <p className="text-[12.5px] font-semibold text-navy/50">{tour.hoursNote}</p>
-            )}
-            <p className="mt-6 max-w-2xl text-[15.5px] leading-relaxed text-navy/70">
-              {tour.blurb}
-            </p>
-          </section>
         </div>
       </main>
     );

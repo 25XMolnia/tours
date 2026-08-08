@@ -901,6 +901,7 @@ export function DayCapsule({
   senior,
   setSenior,
   withBoatRules,
+  openDaySignal,
 }: {
   /** Which capsule edge the popover hangs from; "right" for the hero corner. */
   align?: "left" | "right";
@@ -926,6 +927,9 @@ export function DayCapsule({
   senior: boolean;
   setSenior: (v: boolean) => void;
   withBoatRules: boolean;
+  /** Bumps when someone outside asks for the calendar: the ticket stub's
+   *  "Pick a day" button leads to the same one door, not a second one. */
+  openDaySignal?: number;
 }) {
   /* Two fields, two questions, two panes: tapping the day brings the
      calendar, tapping the travellers brings the counters. One shared popover
@@ -933,6 +937,10 @@ export function DayCapsule({
   const [pane, setPane] = useState<null | "day" | "who">(null);
   const open = pane !== null;
   const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (openDaySignal && openDaySignal > 0) setPane("day");
+  }, [openDaySignal]);
 
   useEffect(() => {
     if (!open) return;
@@ -1200,6 +1208,7 @@ export function SideTicket({
   lines = [],
   totalCents,
   emptyText,
+  onPickDay,
   footnote,
   totalNote = "for everyone, all in",
   bookLabel = "Book this day",
@@ -1216,6 +1225,10 @@ export function SideTicket({
   totalCents: number | null;
   /** What the stub says before there is a price. */
   emptyText: string;
+  /** When the day is still unpicked, the stub grows a button in the same
+   *  slot Book this day will take: the first step and the last one live in
+   *  the same corner of the ticket. Absent once a day is chosen. */
+  onPickDay?: () => void;
   /** A quiet line under the button, when the day needs one. */
   footnote?: string | null;
   totalNote?: string;
@@ -1286,6 +1299,19 @@ export function SideTicket({
                 {footnote && (
                   <p className="mt-2 text-[11px] font-semibold text-navy/50">{footnote}</p>
                 )}
+              </>
+            ) : onPickDay ? (
+              <>
+                <button
+                  type="button"
+                  onClick={onPickDay}
+                  className="block w-full rounded-2xl bg-smart py-3 text-center text-sm font-extrabold text-navy transition-[filter] hover:brightness-105"
+                >
+                  Pick a day
+                </button>
+                <p className="mt-2 text-[11px] font-bold leading-relaxed text-navy/50">
+                  {emptyText}
+                </p>
               </>
             ) : (
               <p className="text-[12.5px] font-bold leading-relaxed text-navy/50">{emptyText}</p>
@@ -1969,6 +1995,9 @@ export function FlightsFlow({
   const [calError, setCalError] = useState<string | null>(null);
 
   const [date, setDate] = useState<string | null>(startDate);
+  /** Bumped by the ticket stub's Pick a day button; the capsule opens its
+   *  calendar in response. One door to the day, two handles on it. */
+  const [dayNudge, setDayNudge] = useState(0);
   const [legs, setLegs] = useState<{ out: FlightLeg[]; back: FlightLeg[] } | null>(null);
   const [legsLoading, setLegsLoading] = useState<boolean>(Boolean(initialDate));
   const [legsError, setLegsError] = useState<string | null>(null);
@@ -2075,6 +2104,7 @@ export function FlightsFlow({
       senior={senior}
       setSenior={setSenior}
       withBoatRules={false}
+      openDaySignal={dayNudge}
     />
   );
 
@@ -2191,6 +2221,7 @@ export function FlightsFlow({
                 ? "Pick a day and your flights and the price lands here."
                 : "Pick a day and your flight and the price lands here."
             }
+            onPickDay={date ? undefined : () => setDayNudge((t) => t + 1)}
             plan={capsule}
           />
         </div>
@@ -2308,6 +2339,9 @@ export function BookingFlow({
   const [sources, setSources] = useState<DataSources | null>(null);
 
   const [date, setDate] = useState<string | null>(startDate);
+  /** Bumped by the ticket stub's Pick a day button; the capsule opens its
+   *  calendar in response. */
+  const [dayNudge, setDayNudge] = useState(0);
   const [boat, setBoat] = useState<BoatType>("semi_covered");
   const [combos, setCombos] = useState<DayCombos | null>(null);
   const [combosLoading, setCombosLoading] = useState(false);
@@ -2654,7 +2688,12 @@ export function BookingFlow({
             ]}
             lines={ticketLines}
             totalCents={ticketTotal}
-            emptyText="Pick a day and a plan and the price lands here, package deal included."
+            emptyText={
+              date
+                ? "Pick a plan above and the price lands here, package deal included."
+                : "Pick a day and a plan and the price lands here, package deal included."
+            }
+            onPickDay={date ? undefined : () => setDayNudge((t) => t + 1)}
             footnote={
               pax.infants > 0
                 ? "Infants fly free on a lap. The boat's infant fare is in the total."
@@ -2683,6 +2722,7 @@ export function BookingFlow({
                 senior={senior}
                 setSenior={setSenior}
                 withBoatRules
+                openDaySignal={dayNudge}
               />
             }
           />

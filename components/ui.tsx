@@ -1788,7 +1788,7 @@ export function DayPlans({
               aria-label={dir === -1 ? "Previous days" : "More days"}
               disabled={dir === -1 ? !offStart : atEnd}
               onClick={() => flip(dir)}
-              className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-pale bg-white text-navy transition-colors hover:border-cobalt disabled:cursor-default disabled:opacity-35 disabled:hover:border-pale"
+              className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-pale bg-white text-navy transition-colors hover:border-cobalt disabled:cursor-default disabled:opacity-35 disabled:hover:border-pale"
             >
               <IconChevronRight className={`h-3.5 w-3.5 ${dir === -1 ? "rotate-180" : ""}`} />
             </button>
@@ -1820,7 +1820,7 @@ export function DayPlans({
               onClick={() => onPick(plan)}
               data-active={active}
               className={[
-                "relative min-w-[224px] shrink-0 snap-start rounded-3xl border-2 p-4 text-left transition-all",
+                "relative min-w-[262px] shrink-0 snap-start rounded-3xl border-2 p-4 text-left transition-all sm:min-w-[224px]",
                 "flex-[0_0_calc((100%-58px)/2.65)]",
                 active
                   ? "-translate-y-1 border-cobalt bg-white shadow-ticket"
@@ -2561,14 +2561,6 @@ export function BookingFlow({
           <h2 className="text-3xl">Pick your boat.</h2>
           <div className="mt-4 grid gap-3.5 sm:grid-cols-2">
             <BoatCard
-              active={boat === "semi_covered"}
-              onPick={() => switchBoat("semi_covered")}
-              image="https://media.tacdn.com/media/attractions-splice-spp-674x446/06/74/10/b2.jpg"
-              imageStyle={{ backgroundSize: "150%", backgroundPosition: "center 60%" }}
-              title="Semi-covered vessel"
-              blurb="Heated cabin, open decks, washrooms on board, and a photo package included. Orca Spirit welcomes all ages on this boat."
-            />
-            <BoatCard
               active={boat === "open"}
               disabled={!openAllowed}
               onPick={() => switchBoat("open")}
@@ -2576,6 +2568,14 @@ export function BookingFlow({
               title="Open vessel"
               blurb="Low, fast and right at the waterline, in a full flotation suit. Orca Spirit takes ages 6 and up, and for this same day package we keep it to adults under 65."
               note={!openAllowed ? "Not available for your group" : undefined}
+            />
+            <BoatCard
+              active={boat === "semi_covered"}
+              onPick={() => switchBoat("semi_covered")}
+              image="https://media.tacdn.com/media/attractions-splice-spp-674x446/06/74/10/b2.jpg"
+              imageStyle={{ backgroundSize: "150%", backgroundPosition: "center 60%" }}
+              title="Semi-covered vessel"
+              blurb="Heated cabin, open decks, washrooms on board, and a photo package included. Orca Spirit welcomes all ages on this boat."
             />
           </div>
           {!openAllowed && (
@@ -2589,7 +2589,7 @@ export function BookingFlow({
           )}
 
           <h2 className="mt-10 text-3xl">Shape your day.</h2>
-          <div className="mt-3">
+          <div className="mt-1">
             {combosError && <ErrorNote text={combosError} />}
             {!date ? (
               <Hint text="Pick a day on the ticket and the times show up here." />
